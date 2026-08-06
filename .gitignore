@@ -1,0 +1,16 @@
+# Python
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+*.pyc
+backend/.env
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# 前端 build 完會被複製到這裡，不進版控
+backend/app/static/*
+!backend/app/static/.gitkeep
+
+.DS_Store
