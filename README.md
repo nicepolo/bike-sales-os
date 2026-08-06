@@ -88,11 +88,13 @@ npm run dev
 
 1. 在 Railway 建立新專案，加入一個 **PostgreSQL** plugin（會自動產生 `DATABASE_URL`）。
 2. 新增一個 **Web Service**，指向這個 repo（root directory 保持專案根目錄，不用改）。
-3. Railway 會偵測到根目錄的 `nixpacks.toml`，依序：
-   - 安裝 Node + Python
-   - `npm ci` + `npm run build` 建置前端，複製到 `backend/app/static`
-   - 安裝後端 Python 套件
+3. Railway 會讀到根目錄的 `railway.json`（`"builder": "DOCKERFILE"`），用根目錄的 `Dockerfile` build：
+   - Stage 1（`node:20-slim`）：`npm ci` + `npm run build` 建置前端
+   - Stage 2（`python:3.12-slim`）：安裝後端 Python 套件，並把 Stage 1 build 出來的靜態檔複製到 `app/static`
    - 啟動前先執行 `flask db upgrade`（自動套用 migration），再用 `gunicorn` 啟動
+
+   > Railway 目前預設用 Railpack 當 builder，但這個專案是「同一次 build 要同時用到 Node 和 Python 兩種工具鏈」的 monorepo，用 Dockerfile 明確指定 multi-stage build 最穩定，不會受 Railway 之後又調整預設 builder 影響。
+
 4. 在 Web Service 的環境變數設定：
 
    | 變數 | 說明 |
