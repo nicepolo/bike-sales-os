@@ -17,7 +17,9 @@
 
 ## Sprint 1 — Sales operations
 
-- `NEXT` Map the current customer schema and API to the proposed Sales Funnel.
+- `PLANNED` Detailed scope recorded in `docs/SALES_FUNNEL.md`.
+- `NEXT` Resolve the business decisions listed in the Sales Funnel plan.
+- `PLANNED` Support two controlled sales owners, `Polo` and `Daniel`, using the existing shared administrator login.
 - `PLANNED` Define funnel stages, allowed transitions, required fields, and reporting metrics.
 - `PLANNED` Map every legacy customer status, including `未成交`, and specify rollback behavior before changing the database constraint.
 - `PLANNED` Add channel/source attribution and next-action tracking.
@@ -27,7 +29,9 @@
 
 ## Sprint 1 — Factory intelligence
 
-- `NEXT` Define the factory checklist sections and evidence requirements.
+- `PLANNED` Detailed scope recorded in `docs/FACTORY_CHECKLIST.md`.
+- `NEXT` Resolve the visit and evidence-storage decisions listed in the Factory Checklist plan.
+- `PLANNED` Factory staff perform the full count; our team records a representative sample and later receiving inspection.
 - `PLANNED` Cover certification labels, motor, battery, charger, frame number, inventory, colours, controls, parts, and reusable media shots.
 - `PLANNED` Separate verified values, captured evidence, and unresolved questions.
 - `PLANNED` Design a mobile workflow that can be used during the factory visit.
