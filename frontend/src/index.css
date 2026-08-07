@@ -226,6 +226,32 @@ tr:hover td {
   gap: 12px 16px;
 }
 
+.sales-tracking-fields {
+  margin-top: 12px;
+}
+
+@media (max-width: 600px) {
+  .app-main {
+    padding: 16px;
+  }
+
+  .modal-overlay {
+    padding: 8px;
+  }
+
+  .modal-box {
+    padding: 16px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-field.full {
+    grid-column: 1;
+  }
+}
+
 .form-field {
   display: flex;
   flex-direction: column;
