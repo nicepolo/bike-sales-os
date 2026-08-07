@@ -30,7 +30,7 @@ class Vehicle(db.Model):
     suggested_price = db.Column(db.Numeric(10, 2))
     # 不加 CHECK 限制，價格層級策略未來會調整
     price_tier = db.Column(db.Integer)
-    photo_urls = db.Column(JSONB, nullable=False, server_default="[]")
+    photo_urls = db.Column(db.JSON().with_variant(JSONB, "postgresql"), nullable=False, server_default="[]")
     status = db.Column(db.String(20), nullable=False, server_default="待上架")
     location = db.Column(db.String(100))
     listed_date = db.Column(db.Date)

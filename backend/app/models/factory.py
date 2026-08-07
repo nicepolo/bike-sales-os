@@ -54,7 +54,7 @@ class FactoryCheckItem(db.Model):
     evidence_source = db.Column(db.String(200))
     notes = db.Column(db.Text)
     follow_up_question = db.Column(db.Text)
-    change_history = db.Column(JSONB, nullable=False, default=list)
+    change_history = db.Column(db.JSON().with_variant(JSONB, "postgresql"), nullable=False, default=list)
     verification_state = db.Column(db.String(20), nullable=False, server_default="待確認")
     updated_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow)
     visit = db.relationship("FactoryVisit", back_populates="items")
