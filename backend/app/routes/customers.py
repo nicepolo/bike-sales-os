@@ -1,10 +1,11 @@
 from datetime import date
+from decimal import Decimal, InvalidOperation
 
 from flask import Blueprint, jsonify, request
 from flask_login import login_required
 
 from app.extensions import db
-from app.models.customer import CHANNELS, CUSTOMER_STATUSES, Customer
+from app.models.customer import CHANNELS, CUSTOMER_STATUSES, SALES_OWNERS, SOURCE_PLATFORMS, Customer
 from app.models.vehicle import Vehicle
 
 bp = Blueprint("customers", __name__, url_prefix="/api/customers")
@@ -19,6 +20,13 @@ EDITABLE_FIELDS = [
     "is_batch_deal",
     "batch_note",
     "referrer",
+    "sales_owner",
+    "source_platform",
+    "audience_segment",
+    "preferred_language",
+    "interested_price",
+    "next_action",
+    "next_action_due_date",
     "notes",
 ]
 
@@ -32,6 +40,10 @@ def _validate(data, partial=False):
         return f"來源通路需為 {CHANNELS}"
     if "status" in data and data["status"] not in CUSTOMER_STATUSES:
         return f"狀態需為 {CUSTOMER_STATUSES}"
+    if data.get("sales_owner") and data["sales_owner"] not in SALES_OWNERS:
+        return f"負責人必須為：{SALES_OWNERS}"
+    if data.get("source_platform") and data["source_platform"] not in SOURCE_PLATFORMS:
+        return f"來源平台必須為：{SOURCE_PLATFORMS}"
     return None
 
 
@@ -44,6 +56,34 @@ def _resolve_deal_date(customer, data, previous_status):
         customer.deal_date = date.today()
     elif customer.status != "已成交":
         customer.deal_date = None
+
+
+def _normalize_sales_dates(data):
+    value = data.get("next_action_due_date")
+    if value:
+        try:
+            data["next_action_due_date"] = date.fromisoformat(value)
+        except (TypeError, ValueError):
+            return "下次追蹤日期格式錯誤"
+    elif "next_action_due_date" in data:
+        data["next_action_due_date"] = None
+    return None
+
+
+def _normalize_sales_fields(data):
+    for field in ("sales_owner", "source_platform", "audience_segment", "preferred_language", "next_action"):
+        if field in data and data[field] == "":
+            data[field] = None
+
+    if data.get("interested_price") is not None:
+        try:
+            price = Decimal(str(data["interested_price"]))
+        except (InvalidOperation, TypeError, ValueError):
+            return "預算／有興趣價格格式錯誤"
+        if price < 0:
+            return "預算／有興趣價格不可小於 0"
+        data["interested_price"] = price
+    return None
 
 
 @bp.get("")
@@ -71,6 +111,12 @@ def get_customer(customer_id):
 @login_required
 def create_customer():
     data = request.get_json(silent=True) or {}
+    date_error = _normalize_sales_dates(data)
+    if date_error:
+        return jsonify({"error": date_error}), 400
+    sales_error = _normalize_sales_fields(data)
+    if sales_error:
+        return jsonify({"error": sales_error}), 400
     error = _validate(data)
     if error:
         return jsonify({"error": error}), 400
@@ -95,6 +141,12 @@ def create_customer():
 def update_customer(customer_id):
     customer = db.get_or_404(Customer, customer_id)
     data = request.get_json(silent=True) or {}
+    date_error = _normalize_sales_dates(data)
+    if date_error:
+        return jsonify({"error": date_error}), 400
+    sales_error = _normalize_sales_fields(data)
+    if sales_error:
+        return jsonify({"error": sales_error}), 400
     error = _validate(data, partial=True)
     if error:
         return jsonify({"error": error}), 400
