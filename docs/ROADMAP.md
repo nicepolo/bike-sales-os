@@ -19,7 +19,7 @@
 
 - `PLANNED` Detailed scope recorded in `docs/SALES_FUNNEL.md`.
 - `NEXT` Resolve the business decisions listed in the Sales Funnel plan.
-- `PLANNED` Support two controlled sales owners, `Polo` and `Daniel`; separate-login requirements remain to be confirmed.
+- `PLANNED` Support two controlled sales owners, `Polo` and `Daniel`, using the existing shared administrator login.
 - `PLANNED` Define funnel stages, allowed transitions, required fields, and reporting metrics.
 - `PLANNED` Map every legacy customer status, including `未成交`, and specify rollback behavior before changing the database constraint.
 - `PLANNED` Add channel/source attribution and next-action tracking.

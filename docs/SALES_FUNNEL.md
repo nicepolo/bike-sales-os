@@ -66,7 +66,7 @@ Start with a controlled list plus `其他`: TikTok, Facebook ads, Facebook group
 
 ## Sales ownership
 
-Sprint 1 has two sales owners: `Polo` and `Daniel`. Use this controlled owner list rather than free text so assignments and reports remain consistent. Whether they require separate login accounts is still to be confirmed. Do not build a full multi-user permission system into this Sprint unless both people require separate logins.
+Sprint 1 has two sales owners: `Polo` and `Daniel`. They share the existing administrator login. Use this controlled owner list rather than free text so assignments and reports remain consistent. Sprint 1 does not include separate user accounts, roles, or per-user permissions.
 
 ## Mobile interface
 
@@ -100,7 +100,6 @@ Sprint 1 has two sales owners: `Polo` and `Daniel`. Use this controlled owner li
 
 ## Decisions required before implementation
 
-- Do Polo and Daniel need separate login accounts, or will one shared administrator login assign records between them?
 - Which lead source values are required on day one?
 - For each existing `已成交` row, is there an order/deposit, full payment, or only an agreed sale? No row may become `已交車` because no vehicle has been delivered yet.
 - Does `已下訂` mean a signed order, a deposit, or either?
