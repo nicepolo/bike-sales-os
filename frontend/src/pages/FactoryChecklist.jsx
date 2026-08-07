@@ -12,6 +12,9 @@ export default function FactoryChecklist() {
   const [copyMessage, setCopyMessage] = useState("");
   const [visitDraft, setVisitDraft] = useState({ title: "", factory_name: "", visit_date: "", notes: "" });
   const [detailsSaving, setDetailsSaving] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createDraft, setCreateDraft] = useState({ title: "BE100 工廠實地採集", factory_name: "", visit_date: "", notes: "" });
+  const [creating, setCreating] = useState(false);
   const [savingIds, setSavingIds] = useState([]);
   const saveQueues = useRef({});
 
@@ -19,10 +22,17 @@ export default function FactoryChecklist() {
   useEffect(() => { loadVisits().catch(() => setError("工廠訪視載入失敗")); }, []);
 
   async function openVisit(id) { try { const res = await client.get(`/factory-visits/${id}`); setVisit(res.data); setVisitDraft({ title: res.data.title, factory_name: res.data.factory_name || "", visit_date: res.data.visit_date || "", notes: res.data.notes || "" }); setSection(res.data.items[0]?.section || ""); setShowSummary(false); setCopyMessage(""); setError(""); } catch { setError("訪視資料載入失敗，請檢查網路後重試"); } }
-  async function createVisit() {
-    const title = window.prompt("請輸入訪視名稱", "BE100 工廠實地採集");
-    if (!title) return;
-    try { const res = await client.post("/factory-visits", { title }); await loadVisits(); await openVisit(res.data.id); } catch { setError("建立訪視失敗，請檢查網路後重試"); }
+  async function createVisit(event) {
+    event.preventDefault();
+    setCreating(true);
+    try {
+      const res = await client.post("/factory-visits", createDraft);
+      setCreateDraft({ title: "BE100 工廠實地採集", factory_name: "", visit_date: "", notes: "" });
+      setShowCreateForm(false);
+      await loadVisits();
+      await openVisit(res.data.id);
+    } catch (requestError) { setError(requestError.response?.data?.error || "建立訪視失敗，請檢查網路後重試"); }
+    finally { setCreating(false); }
   }
   async function updateItem(item, patch) {
     const save = async () => {
@@ -88,7 +98,13 @@ export default function FactoryChecklist() {
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  if (!visit) return <div><div className="page-heading-row"><h1 className="page-title">工廠採集</h1><button className="btn" onClick={createVisit}>+ 新增訪視</button></div>{error && <div className="error-text">{error}</div>}<div className="customer-cards">{visits.map((v) => <button className="factory-visit-card" key={v.id} onClick={() => openVisit(v.id)}><strong>{v.title}</strong><span>{v.visit_date || "日期未設定"}</span><small>{v.counts?.已確認 || 0} / {v.total_items} 已確認</small></button>)}{visits.length === 0 && <div className="card empty-state">尚未建立工廠訪視</div>}</div></div>;
+  if (!visit) return <div><div className="page-heading-row"><h1 className="page-title">工廠採集</h1><button className="btn" onClick={() => setShowCreateForm((value) => !value)}>{showCreateForm ? "取消新增" : "+ 新增訪視"}</button></div>{showCreateForm && <form className="factory-visit-details factory-create-form" onSubmit={createVisit}>
+    <label>訪視名稱<input maxLength="120" required value={createDraft.title} onChange={(event) => setCreateDraft((current) => ({ ...current, title: event.target.value }))} /></label>
+    <label>工廠名稱<input maxLength="120" value={createDraft.factory_name} onChange={(event) => setCreateDraft((current) => ({ ...current, factory_name: event.target.value }))} /></label>
+    <label>訪視日期<input type="date" value={createDraft.visit_date} onChange={(event) => setCreateDraft((current) => ({ ...current, visit_date: event.target.value }))} /></label>
+    <label className="factory-details-notes">整體備註<textarea value={createDraft.notes} onChange={(event) => setCreateDraft((current) => ({ ...current, notes: event.target.value }))} /></label>
+    <button className="btn" disabled={creating} type="submit">{creating ? "建立中…" : "建立並開始採集"}</button>
+  </form>}{error && <div className="error-text">{error}</div>}<div className="customer-cards">{visits.map((v) => <button className="factory-visit-card" key={v.id} onClick={() => openVisit(v.id)}><strong>{v.title}</strong><span>{v.factory_name || "工廠未設定"}｜{v.visit_date || "日期未設定"}</span><small>{v.counts?.已確認 || 0} / {v.total_items} 已確認</small></button>)}{visits.length === 0 && <div className="card empty-state">尚未建立工廠訪視</div>}</div></div>;
 
   return <div>
     <div className="page-heading-row factory-heading"><button className="btn btn-secondary" onClick={() => { setVisit(null); setShowSummary(false); }}>← 返回訪視</button><h1 className="page-title">{visit.title}</h1><button className="btn" onClick={() => setShowSummary((value) => !value)}>{showSummary ? "返回採集" : `訪視摘要 (${unresolvedItems.length})`}</button></div>

@@ -14,7 +14,7 @@ def _utcnow():
 class FactoryVisit(db.Model):
     __tablename__ = "factory_visits"
 
-    id = db.Column(db.BigInteger, primary_key=True)
+    id = db.Column(db.BigInteger().with_variant(db.Integer, "sqlite"), primary_key=True)
     title = db.Column(db.String(120), nullable=False)
     factory_name = db.Column(db.String(120))
     visit_date = db.Column(db.Date)
@@ -43,8 +43,8 @@ class FactoryCheckItem(db.Model):
         db.CheckConstraint(f"verification_state IN {VERIFICATION_STATES}", name="ck_factory_check_items_verification"),
     )
 
-    id = db.Column(db.BigInteger, primary_key=True)
-    visit_id = db.Column(db.BigInteger, db.ForeignKey("factory_visits.id", ondelete="CASCADE"), nullable=False, index=True)
+    id = db.Column(db.BigInteger().with_variant(db.Integer, "sqlite"), primary_key=True)
+    visit_id = db.Column(db.BigInteger().with_variant(db.Integer, "sqlite"), db.ForeignKey("factory_visits.id", ondelete="CASCADE"), nullable=False, index=True)
     item_key = db.Column(db.String(80), nullable=False)
     section = db.Column(db.String(80), nullable=False)
     label = db.Column(db.String(200), nullable=False)
