@@ -29,11 +29,13 @@ def create_app():
     from app.routes.vehicles import bp as vehicles_bp
     from app.routes.customers import bp as customers_bp
     from app.routes.dashboard import bp as dashboard_bp
+    from app.routes.factory import bp as factory_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(vehicles_bp)
     app.register_blueprint(customers_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(factory_bp)
 
     @app.route("/", defaults={"path": ""})
     @app.route("/<path:path>")

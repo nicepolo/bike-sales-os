@@ -24,6 +24,9 @@ export default function Layout() {
           <NavLink to="/customers" className={({ isActive }) => (isActive ? "active" : "")}>
             客戶管理
           </NavLink>
+          <NavLink to="/factory" className={({ isActive }) => (isActive ? "active" : "")}>
+            工廠採集
+          </NavLink>
         </nav>
         <button className="logout-btn" onClick={handleLogout}>
           登出
