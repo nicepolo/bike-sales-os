@@ -12,6 +12,7 @@
 - `NEXT` Confirm the collaboration documents with Codex and Claude Code.
 - `PLANNED` Use `master` only for reviewed production releases.
 - `PLANNED` Create one branch per feature and review before merge.
+- `PLANNED` GitHub pull requests automatically run backend tests and the frontend production build, pending production review.
 - `NEXT` Add GitHub protection for `master` after confirming the repository plan supports the required rules.
 - `LATER` Add staging only when the deployment workflow justifies its ongoing cost.
 
