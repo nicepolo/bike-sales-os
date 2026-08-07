@@ -24,6 +24,7 @@
 - `PLANNED` Define funnel stages, allowed transitions, required fields, and reporting metrics.
 - `PLANNED` Map every legacy customer status, including `未成交`, and specify rollback behavior before changing the database constraint.
 - `PLANNED` Add channel/source attribution and next-action tracking.
+- `PLANNED` Polo/Daniel workload cards and unassigned-customer filtering are implemented pending production review.
 - `PLANNED` Design the mobile-first funnel interface.
 - `PLANNED` Implement a safe database migration, API changes, UI, and tests/checks.
 - `PLANNED` Baseline Factory Checklist API tests are implemented pending review; keep backend compile and frontend production-build checks.
