@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Vehicles from "./pages/Vehicles";
 import Customers from "./pages/Customers";
+import FactoryChecklist from "./pages/FactoryChecklist";
 import { useAuth } from "./context/AuthContext";
 
 function ProtectedRoute({ children }) {
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="vehicles" element={<Vehicles />} />
         <Route path="customers" element={<Customers />} />
+        <Route path="factory" element={<FactoryChecklist />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
