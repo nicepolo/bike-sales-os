@@ -10,13 +10,15 @@ export default function FactoryChecklist() {
   const [error, setError] = useState("");
   const [showSummary, setShowSummary] = useState(false);
   const [copyMessage, setCopyMessage] = useState("");
+  const [visitDraft, setVisitDraft] = useState({ title: "", factory_name: "", visit_date: "", notes: "" });
+  const [detailsSaving, setDetailsSaving] = useState(false);
   const [savingIds, setSavingIds] = useState([]);
   const saveQueues = useRef({});
 
   async function loadVisits() { const res = await client.get("/factory-visits"); setVisits(res.data); }
   useEffect(() => { loadVisits().catch(() => setError("工廠訪視載入失敗")); }, []);
 
-  async function openVisit(id) { try { const res = await client.get(`/factory-visits/${id}`); setVisit(res.data); setSection(res.data.items[0]?.section || ""); setShowSummary(false); setCopyMessage(""); setError(""); } catch { setError("訪視資料載入失敗，請檢查網路後重試"); } }
+  async function openVisit(id) { try { const res = await client.get(`/factory-visits/${id}`); setVisit(res.data); setVisitDraft({ title: res.data.title, factory_name: res.data.factory_name || "", visit_date: res.data.visit_date || "", notes: res.data.notes || "" }); setSection(res.data.items[0]?.section || ""); setShowSummary(false); setCopyMessage(""); setError(""); } catch { setError("訪視資料載入失敗，請檢查網路後重試"); } }
   async function createVisit() {
     const title = window.prompt("請輸入訪視名稱", "BE100 工廠實地採集");
     if (!title) return;
@@ -37,6 +39,19 @@ export default function FactoryChecklist() {
     };
     saveQueues.current[item.id] = (saveQueues.current[item.id] || Promise.resolve()).then(save);
     await saveQueues.current[item.id];
+  }
+  function changeVisitDraft(event) { setVisitDraft((current) => ({ ...current, [event.target.name]: event.target.value })); }
+  async function saveVisitDetails(event) {
+    event.preventDefault();
+    setDetailsSaving(true);
+    try {
+      const res = await client.put(`/factory-visits/${visit.id}`, visitDraft);
+      setVisit(res.data);
+      setVisitDraft({ title: res.data.title, factory_name: res.data.factory_name || "", visit_date: res.data.visit_date || "", notes: res.data.notes || "" });
+      await loadVisits();
+      setError("");
+    } catch (requestError) { setError(requestError.response?.data?.error || "訪視資料儲存失敗，請稍後重試"); }
+    finally { setDetailsSaving(false); }
   }
 
   const sections = useMemo(() => visit ? [...new Set(visit.items.map((item) => item.section))] : [], [visit]);
@@ -77,6 +92,13 @@ export default function FactoryChecklist() {
 
   return <div>
     <div className="page-heading-row factory-heading"><button className="btn btn-secondary" onClick={() => { setVisit(null); setShowSummary(false); }}>← 返回訪視</button><h1 className="page-title">{visit.title}</h1><button className="btn" onClick={() => setShowSummary((value) => !value)}>{showSummary ? "返回採集" : `訪視摘要 (${unresolvedItems.length})`}</button></div>
+    <form className="factory-visit-details" onSubmit={saveVisitDetails}>
+      <label>訪視名稱<input name="title" maxLength="120" required value={visitDraft.title} onChange={changeVisitDraft} /></label>
+      <label>工廠名稱<input name="factory_name" maxLength="120" value={visitDraft.factory_name} onChange={changeVisitDraft} /></label>
+      <label>訪視日期<input name="visit_date" type="date" value={visitDraft.visit_date} onChange={changeVisitDraft} /></label>
+      <label className="factory-details-notes">整體備註<textarea name="notes" value={visitDraft.notes} onChange={changeVisitDraft} /></label>
+      <button className="btn" disabled={detailsSaving} type="submit">{detailsSaving ? "儲存中…" : "儲存訪視資料"}</button>
+    </form>
     <div className="factory-progress"><div><strong>{percent}%</strong><span>{completed} / {visit.items.length} 已處理</span></div><progress max="100" value={percent} /></div>
     {showSummary && <section className="factory-summary">
       <div className="factory-summary-actions"><button className="btn" onClick={copySummary}>複製摘要</button><button className="btn btn-secondary" onClick={downloadSummary}>下載文字檔</button>{copyMessage && <span className="copy-message" role="status">{copyMessage}</span>}</div>

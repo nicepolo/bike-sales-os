@@ -274,6 +274,11 @@ tr:hover td {
 .factory-error { position: sticky; top: 8px; z-index: 4; background: #fef2f2; border: 1px solid #fecaca; padding: 10px; border-radius: 6px; margin-bottom: 10px; }
 .saving-text { display: block; color: #2563eb; margin-top: 8px; }
 .factory-statuses button:disabled { cursor: wait; opacity: 0.6; }
+.factory-visit-details { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 12px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: end; }
+.factory-visit-details label { display: grid; gap: 4px; font-size: 13px; color: #374151; }
+.factory-visit-details input, .factory-visit-details textarea { width: 100%; }
+.factory-details-notes { grid-column: 1 / -1; }
+.factory-details-notes textarea { min-height: 64px; resize: vertical; }
 .factory-summary { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; display: grid; gap: 12px; }
 .factory-summary h2, .factory-summary p { margin: 0; }
 .factory-summary-actions { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -285,6 +290,7 @@ tr:hover td {
   .factory-heading { align-items: stretch; flex-wrap: wrap; }
   .factory-heading .page-title { order: -1; width: 100%; }
   .factory-heading .btn { flex: 1; }
+  .factory-visit-details { grid-template-columns: 1fr; }
 }
 
 .form-field {

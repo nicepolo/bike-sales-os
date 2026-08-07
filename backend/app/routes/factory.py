@@ -54,6 +54,40 @@ def get_visit(visit_id):
     return jsonify(db.get_or_404(FactoryVisit, visit_id).to_dict(include_items=True))
 
 
+@bp.put("/<int:visit_id>")
+@login_required
+def update_visit(visit_id):
+    visit = db.get_or_404(FactoryVisit, visit_id)
+    data = request.get_json(silent=True) or {}
+    title_value = data.get("title", visit.title)
+    if not isinstance(title_value, str) or not title_value.strip():
+        return jsonify({"error": "訪視名稱為必填"}), 400
+    title = title_value.strip()
+    if len(title) > 120:
+        return jsonify({"error": "訪視名稱不可超過 120 字"}), 400
+    factory_name = data.get("factory_name", visit.factory_name)
+    if factory_name is not None and not isinstance(factory_name, str):
+        return jsonify({"error": "工廠名稱格式錯誤"}), 400
+    factory_name = factory_name.strip() if factory_name else None
+    if factory_name and len(factory_name) > 120:
+        return jsonify({"error": "工廠名稱不可超過 120 字"}), 400
+    visit_date = visit.visit_date
+    if "visit_date" in data:
+        try:
+            visit_date = date.fromisoformat(data["visit_date"]) if data["visit_date"] else None
+        except (TypeError, ValueError):
+            return jsonify({"error": "訪視日期格式錯誤"}), 400
+    visit.title = title
+    visit.factory_name = factory_name
+    visit.visit_date = visit_date
+    if "notes" in data:
+        if data["notes"] is not None and not isinstance(data["notes"], str):
+            return jsonify({"error": "整體備註格式錯誤"}), 400
+        visit.notes = data["notes"].strip() if data["notes"] else None
+    db.session.commit()
+    return jsonify(visit.to_dict(include_items=True))
+
+
 @bp.put("/<int:visit_id>/items/<int:item_id>")
 @login_required
 def update_item(visit_id, item_id):
