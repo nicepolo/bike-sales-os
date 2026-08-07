@@ -32,15 +32,28 @@ def list_visits():
 @login_required
 def create_visit():
     data = request.get_json(silent=True) or {}
-    if not data.get("title"):
+    title_value = data.get("title")
+    if not isinstance(title_value, str) or not title_value.strip():
         return jsonify({"error": "訪視名稱為必填"}), 400
+    title = title_value.strip()
+    if len(title) > 120:
+        return jsonify({"error": "訪視名稱不可超過 120 字"}), 400
+    factory_name = data.get("factory_name")
+    if factory_name is not None and not isinstance(factory_name, str):
+        return jsonify({"error": "工廠名稱格式錯誤"}), 400
+    factory_name = (factory_name.strip() or None) if factory_name else None
+    if factory_name and len(factory_name) > 120:
+        return jsonify({"error": "工廠名稱不可超過 120 字"}), 400
+    notes = data.get("notes")
+    if notes is not None and not isinstance(notes, str):
+        return jsonify({"error": "整體備註格式錯誤"}), 400
     visit_date = None
     if data.get("visit_date"):
         try:
             visit_date = date.fromisoformat(data["visit_date"])
         except ValueError:
             return jsonify({"error": "訪視日期格式錯誤"}), 400
-    visit = FactoryVisit(title=data["title"], factory_name=data.get("factory_name") or None, visit_date=visit_date, notes=data.get("notes") or None)
+    visit = FactoryVisit(title=title, factory_name=factory_name, visit_date=visit_date, notes=(notes.strip() or None) if notes else None)
     for position, (section, key, label) in enumerate(TEMPLATE, 1):
         visit.items.append(FactoryCheckItem(section=section, item_key=key, label=label, position=position))
     db.session.add(visit)

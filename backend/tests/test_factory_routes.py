@@ -15,6 +15,34 @@ def test_factory_routes_require_login(client):
     assert client.put("/api/factory-visits/1", json={"title": "不可更新"}).status_code == 401
 
 
+def test_create_visit_with_details_builds_full_checklist(authenticated_client):
+    response = authenticated_client.post("/api/factory-visits", json={
+        "title": "  BE100 工廠訪視  ",
+        "factory_name": "測試工廠",
+        "visit_date": "2026-08-20",
+        "notes": "工廠盤點、我方抽樣",
+    })
+    assert response.status_code == 201
+    payload = response.get_json()
+    assert payload["title"] == "BE100 工廠訪視"
+    assert payload["factory_name"] == "測試工廠"
+    assert payload["visit_date"] == "2026-08-20"
+    assert payload["total_items"] == 31
+    assert len(payload["items"]) == 31
+
+
+def test_create_visit_rejects_non_text_title(authenticated_client):
+    response = authenticated_client.post("/api/factory-visits", json={"title": ["錯誤格式"]})
+    assert response.status_code == 400
+
+
+def test_create_visit_normalizes_whitespace_optional_fields(authenticated_client):
+    response = authenticated_client.post("/api/factory-visits", json={"title": "訪視", "factory_name": "   ", "notes": "   "})
+    assert response.status_code == 201
+    assert response.get_json()["factory_name"] is None
+    assert response.get_json()["notes"] is None
+
+
 def test_update_visit_details_preserves_checklist(app, authenticated_client):
     seed_visit(app)
     response = authenticated_client.put("/api/factory-visits/1", json={
