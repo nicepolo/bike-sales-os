@@ -25,7 +25,7 @@
 - `PLANNED` Add channel/source attribution and next-action tracking.
 - `PLANNED` Design the mobile-first funnel interface.
 - `PLANNED` Implement a safe database migration, API changes, UI, and tests/checks.
-- `PLANNED` Add baseline automated tests; until then require backend compile and frontend production-build checks.
+- `PLANNED` Baseline Factory Checklist API tests are implemented pending review; keep backend compile and frontend production-build checks.
 
 ## Sprint 1 — Factory intelligence
 
