@@ -31,6 +31,7 @@
 
 - `PLANNED` Detailed scope recorded in `docs/FACTORY_CHECKLIST.md`.
 - `NEXT` Resolve the visit and evidence-storage decisions listed in the Factory Checklist plan.
+- `PLANNED` Visit summary and unresolved-question export are implemented pending production review.
 - `PLANNED` Factory staff perform the full count; our team records a representative sample and later receiving inspection.
 - `PLANNED` Cover certification labels, motor, battery, charger, frame number, inventory, colours, controls, parts, and reusable media shots.
 - `PLANNED` Separate verified values, captured evidence, and unresolved questions.

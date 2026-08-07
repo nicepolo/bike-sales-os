@@ -274,6 +274,18 @@ tr:hover td {
 .factory-error { position: sticky; top: 8px; z-index: 4; background: #fef2f2; border: 1px solid #fecaca; padding: 10px; border-radius: 6px; margin-bottom: 10px; }
 .saving-text { display: block; color: #2563eb; margin-top: 8px; }
 .factory-statuses button:disabled { cursor: wait; opacity: 0.6; }
+.factory-summary { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; display: grid; gap: 12px; }
+.factory-summary h2, .factory-summary p { margin: 0; }
+.factory-summary-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.copy-message { align-self: center; color: #15803d; font-size: 14px; }
+.summary-question { border: 1px solid #e5e7eb; border-left: 4px solid #f59e0b; border-radius: 6px; padding: 12px; display: grid; gap: 6px; }
+.summary-question span { color: #b45309; font-size: 13px; }
+.summary-question p { color: #4b5563; font-size: 14px; }
+@media (max-width: 640px) {
+  .factory-heading { align-items: stretch; flex-wrap: wrap; }
+  .factory-heading .page-title { order: -1; width: 100%; }
+  .factory-heading .btn { flex: 1; }
+}
 
 .form-field {
   display: flex;
