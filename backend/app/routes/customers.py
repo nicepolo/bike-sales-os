@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 
 from flask import Blueprint, jsonify, request
@@ -9,6 +9,7 @@ from app.models.customer import CHANNELS, CUSTOMER_STATUSES, SALES_OWNERS, SOURC
 from app.models.vehicle import Vehicle
 
 bp = Blueprint("customers", __name__, url_prefix="/api/customers")
+TAIPEI_TIMEZONE = timezone(timedelta(hours=8))
 
 EDITABLE_FIELDS = [
     "name",
@@ -53,7 +54,7 @@ def _resolve_deal_date(customer, data, previous_status):
         customer.deal_date = data["deal_date"]
         return
     if customer.status == "已成交" and previous_status != "已成交":
-        customer.deal_date = date.today()
+        customer.deal_date = datetime.now(TAIPEI_TIMEZONE).date()
     elif customer.status != "已成交":
         customer.deal_date = None
 
@@ -91,11 +92,21 @@ def _normalize_sales_fields(data):
 def list_customers():
     channel = request.args.get("channel")
     status = request.args.get("status")
+    sales_owner = request.args.get("sales_owner")
+    source_platform = request.args.get("source_platform")
+    overdue = request.args.get("overdue") == "true"
     query = Customer.query
     if channel:
         query = query.filter_by(channel=channel)
     if status:
         query = query.filter_by(status=status)
+    if sales_owner:
+        query = query.filter_by(sales_owner=sales_owner)
+    if source_platform:
+        query = query.filter_by(source_platform=source_platform)
+    if overdue:
+        taipei_today = datetime.now(TAIPEI_TIMEZONE).date()
+        query = query.filter(Customer.next_action_due_date < taipei_today)
     customers = query.order_by(Customer.created_at.desc()).all()
     return jsonify([c.to_dict() for c in customers])
 

@@ -321,3 +321,31 @@ tr:hover td {
   width: 100%;
   padding: 10px;
 }
+
+.page-heading-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
+.page-heading-row .page-title { margin: 0; }
+.funnel-grid { display: grid; grid-template-columns: repeat(5, minmax(120px, 1fr)); gap: 10px; margin-bottom: 16px; overflow-x: auto; }
+.funnel-card { border: 1px solid #dbe3ef; background: #fff; border-radius: 8px; padding: 12px; min-width: 120px; text-align: left; cursor: pointer; color: #374151; }
+.funnel-card strong { display: block; font-size: 24px; margin-top: 6px; color: #111827; }
+.funnel-card.active { border-color: #2563eb; box-shadow: 0 0 0 2px #dbeafe; }
+.overdue-filter { display: flex; gap: 6px; align-items: center; font-size: 14px; }
+.customer-cards { display: grid; gap: 12px; }
+.customer-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; }
+.customer-card.overdue { border-left: 4px solid #dc2626; }
+.customer-card-header, .customer-card-actions { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.customer-meta { display: flex; gap: 8px 16px; flex-wrap: wrap; color: #6b7280; font-size: 13px; margin: 10px 0; }
+.customer-sales-detail { display: flex; gap: 8px 20px; flex-wrap: wrap; font-size: 13px; margin-bottom: 10px; color: #6b7280; }
+.customer-sales-detail strong { color: #374151; }
+.next-action { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; background: #f9fafb; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 13px; }
+.next-action span, .next-action small { color: #6b7280; }
+.overdue-text { color: #dc2626 !important; font-weight: 600; }
+.customer-card-actions { justify-content: flex-end; }
+.empty-state { text-align: center; color: #6b7280; }
+
+@media (max-width: 600px) {
+  .page-heading-row { align-items: stretch; }
+  .funnel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); overflow-x: visible; }
+  .customer-filters select { flex: 1 1 calc(50% - 6px); min-width: 0; }
+  .next-action { grid-template-columns: 1fr; gap: 4px; }
+  .customer-card-actions .btn { flex: 1; }
+}
