@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import client from "../api/client";
 
 const ITEM_STATUSES = ["未檢查", "已確認", "不適用", "有問題"];
+const isUnresolved = (item) => item.status === "有問題" || item.status === "未檢查" || Boolean(item.follow_up_question);
 
 export default function FactoryChecklist() {
   const [visits, setVisits] = useState([]);
@@ -15,13 +16,15 @@ export default function FactoryChecklist() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createDraft, setCreateDraft] = useState({ title: "BE100 工廠實地採集", factory_name: "", visit_date: "", notes: "" });
   const [creating, setCreating] = useState(false);
+  const [navigationCursorId, setNavigationCursorId] = useState(null);
+  const [pendingScrollId, setPendingScrollId] = useState(null);
   const [savingIds, setSavingIds] = useState([]);
   const saveQueues = useRef({});
 
   async function loadVisits() { const res = await client.get("/factory-visits"); setVisits(res.data); }
   useEffect(() => { loadVisits().catch(() => setError("工廠訪視載入失敗")); }, []);
 
-  async function openVisit(id) { try { const res = await client.get(`/factory-visits/${id}`); setVisit(res.data); setVisitDraft({ title: res.data.title, factory_name: res.data.factory_name || "", visit_date: res.data.visit_date || "", notes: res.data.notes || "" }); setSection(res.data.items[0]?.section || ""); setShowSummary(false); setCopyMessage(""); setError(""); } catch { setError("訪視資料載入失敗，請檢查網路後重試"); } }
+  async function openVisit(id) { try { const res = await client.get(`/factory-visits/${id}`); setVisit(res.data); setVisitDraft({ title: res.data.title, factory_name: res.data.factory_name || "", visit_date: res.data.visit_date || "", notes: res.data.notes || "" }); setSection(res.data.items[0]?.section || ""); setNavigationCursorId(null); setPendingScrollId(null); setShowSummary(false); setCopyMessage(""); setError(""); } catch { setError("訪視資料載入失敗，請檢查網路後重試"); } }
   async function createVisit(event) {
     event.preventDefault();
     setCreating(true);
@@ -65,10 +68,38 @@ export default function FactoryChecklist() {
   }
 
   const sections = useMemo(() => visit ? [...new Set(visit.items.map((item) => item.section))] : [], [visit]);
+  const sectionStats = useMemo(() => Object.fromEntries(sections.map((name) => {
+    const sectionItems = visit.items.filter((item) => item.section === name);
+    return [name, {
+      confirmed: sectionItems.filter((item) => item.status === "已確認").length,
+      issues: sectionItems.filter((item) => item.status === "有問題").length,
+      total: sectionItems.length,
+    }];
+  })), [visit, sections]);
   const items = visit?.items.filter((item) => item.section === section) || [];
   const completed = visit?.items.filter((item) => item.status !== "未檢查").length || 0;
   const percent = visit?.items.length ? Math.round(completed / visit.items.length * 100) : 0;
-  const unresolvedItems = useMemo(() => visit?.items.filter((item) => item.status === "有問題" || item.status === "未檢查" || item.follow_up_question) || [], [visit]);
+  const unresolvedItems = useMemo(() => visit?.items.filter(isUnresolved) || [], [visit]);
+  useEffect(() => {
+    if (!pendingScrollId) return;
+    const target = document.getElementById(`factory-item-${pendingScrollId}`);
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    target.focus({ preventScroll: true });
+    setPendingScrollId(null);
+  }, [section, pendingScrollId, visit]);
+  function goToNextUnresolved() {
+    const cursorPosition = navigationCursorId
+      ? visit.items.findIndex((item) => item.id === navigationCursorId)
+      : visit.items.findIndex((item) => item.section === section) - 1;
+    const orderedItems = [...visit.items.slice(cursorPosition + 1), ...visit.items.slice(0, cursorPosition + 1)];
+    const target = orderedItems.find(isUnresolved);
+    if (!target) return;
+    setShowSummary(false);
+    setNavigationCursorId(target.id);
+    setPendingScrollId(target.id);
+    setSection(target.section);
+  }
   const summaryText = useMemo(() => {
     if (!visit) return "";
     const sectionLines = [...new Set(visit.items.map((item) => item.section))].map((name) => {
@@ -115,7 +146,7 @@ export default function FactoryChecklist() {
       <label className="factory-details-notes">整體備註<textarea name="notes" value={visitDraft.notes} onChange={changeVisitDraft} /></label>
       <button className="btn" disabled={detailsSaving} type="submit">{detailsSaving ? "儲存中…" : "儲存訪視資料"}</button>
     </form>
-    <div className="factory-progress"><div><strong>{percent}%</strong><span>{completed} / {visit.items.length} 已處理</span></div><progress max="100" value={percent} /></div>
+    <div className="factory-progress"><div className="factory-progress-heading"><strong>{percent}%</strong><span>{completed} / {visit.items.length} 已處理</span></div><progress max="100" value={percent} /><div className="factory-progress-actions"><span>{unresolvedItems.length} 項待處理</span><button className="btn btn-secondary" disabled={unresolvedItems.length === 0} onClick={goToNextUnresolved}>下一個待處理 →</button></div></div>
     {showSummary && <section className="factory-summary">
       <div className="factory-summary-actions"><button className="btn" onClick={copySummary}>複製摘要</button><button className="btn btn-secondary" onClick={downloadSummary}>下載文字檔</button>{copyMessage && <span className="copy-message" role="status">{copyMessage}</span>}</div>
       <h2>未解問題與離場檢查</h2>
@@ -124,9 +155,9 @@ export default function FactoryChecklist() {
       <div className="legal-warning">摘要中的「待確認」資訊不可直接用於廣告、官網或法律聲明。</div>
     </section>}
     {!showSummary && <>
-    <div className="factory-sections">{sections.map((value) => <button aria-pressed={section === value} className={section === value ? "active" : ""} key={value} onClick={() => setSection(value)}>{value}</button>)}</div>
+    <div className="factory-sections">{sections.map((value) => <button aria-pressed={section === value} className={section === value ? "active" : ""} key={value} onClick={() => { setSection(value); setNavigationCursorId(null); }}><span>{value}</span><small>{sectionStats[value].confirmed}/{sectionStats[value].total} 已確認{sectionStats[value].issues > 0 ? `・${sectionStats[value].issues} 問題` : ""}</small></button>)}</div>
     {error && <div className="error-text factory-error">{error}</div>}
-    <div className="factory-items">{items.map((item) => <article className={`factory-item status-${item.status}`} key={item.id}>
+    <div className="factory-items">{items.map((item) => <article id={`factory-item-${item.id}`} tabIndex={-1} className={`factory-item status-${item.status}`} key={item.id}>
       <h3>{item.label}</h3>
       {item.item_key === "legal_questions" && <div className="legal-warning">道路合法性不可只憑口述驗證，必須取得官方文件證據。</div>}
       <div className="factory-statuses">{ITEM_STATUSES.map((status) => <button disabled={savingIds.includes(item.id)} aria-pressed={item.status === status} key={status} onClick={() => updateItem(item, { status })}>{status}</button>)}</div>
