@@ -59,8 +59,9 @@ export default function CustomerForm({ initial, onSubmit, onCancel }) {
     setError("");
     setSubmitting(true);
     try {
+      const { source_platform, audience_segment, preferred_language, ...canonicalForm } = form;
       await onSubmit({
-        ...form,
+        ...canonicalForm,
         vehicle_id: form.vehicle_id === "" ? null : Number(form.vehicle_id),
         deal_amount: form.deal_amount === "" ? null : Number(form.deal_amount),
         interested_price: form.interested_price === "" ? null : Number(form.interested_price),

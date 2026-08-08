@@ -151,6 +151,74 @@ def test_updating_canonical_fields_keeps_legacy_api_fields_consistent(app, authe
     assert payload["language"] == payload["preferred_language"] == "中文"
 
 
+def test_legacy_api_fields_update_canonical_fields(app, authenticated_client):
+    with app.app_context():
+        customer = Customer(name="Legacy client", channel="B2C", status="新詢問")
+        db.session.add(customer)
+        db.session.commit()
+        customer_id = customer.id
+
+    response = authenticated_client.put(f"/api/customers/{customer_id}", json={
+        "audience_segment": "學生",
+        "preferred_language": "泰文",
+    })
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["customer_segment"] == payload["audience_segment"] == "學生"
+    assert payload["language"] == payload["preferred_language"] == "泰文"
+
+
+def test_empty_legacy_aliases_do_not_conflict_with_canonical_fields(authenticated_client):
+    response = authenticated_client.post("/api/customers", json={
+        "name": "Current form",
+        "channel": "B2C",
+        "audience_segment": "",
+        "preferred_language": "",
+        "customer_segment": "親子家庭",
+        "language": "印尼文",
+    })
+    assert response.status_code == 201
+    payload = response.get_json()
+    assert payload["customer_segment"] == payload["audience_segment"] == "親子家庭"
+    assert payload["language"] == payload["preferred_language"] == "印尼文"
+
+
+def test_conflicting_or_uncontrolled_legacy_aliases_are_rejected(authenticated_client):
+    base = {"name": "Legacy client", "channel": "B2C"}
+    cases = [
+        {"audience_segment": "學生", "customer_segment": "通勤族"},
+        {"preferred_language": "中文", "language": "越南文"},
+        {"audience_segment": "未定義客群"},
+        {"preferred_language": "英文"},
+    ]
+    for fields in cases:
+        response = authenticated_client.post("/api/customers", json={**base, **fields})
+        assert response.status_code == 400
+
+
+def test_migration_upgrade_preserves_status_before_mapping(monkeypatch):
+    migration_path = Path(__file__).parents[1] / "migrations" / "versions" / "d4f6a8c2e190_expand_customer_sales_funnel.py"
+    spec = importlib.util.spec_from_file_location("customer_funnel_migration_order", migration_path)
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+    operations = []
+
+    class FakeOp:
+        def __getattr__(self, name):
+            def record(*args, **kwargs):
+                operations.append((name, args, kwargs))
+            return record
+
+    monkeypatch.setattr(migration, "op", FakeOp())
+    migration.upgrade()
+
+    executed_sql = [args[0] for name, args, _ in operations if name == "execute"]
+    backup_index = executed_sql.index("UPDATE customers SET legacy_status = status")
+    mapping_index = executed_sql.index(migration._legacy_status_update_sql())
+    assert backup_index < mapping_index
+    assert any(name == "create_check_constraint" and args[0] == "ck_customers_status" for name, args, _ in operations)
+
+
 def test_customer_changes_do_not_change_vehicle_status(app, authenticated_client):
     from app.models.vehicle import Vehicle
 

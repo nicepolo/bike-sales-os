@@ -83,6 +83,31 @@ def _sync_legacy_sales_fields(data):
         data["source_platform"] = "Facebook廣告" if data["source"] == "Facebook" else data["source"]
 
 
+def _normalize_legacy_aliases(data):
+    """Accept controlled legacy names without allowing canonical values to diverge."""
+    aliases = (
+        ("audience_segment", "customer_segment", CUSTOMER_SEGMENTS, "客群"),
+        ("preferred_language", "language", LANGUAGES, "語言"),
+    )
+    for legacy_field, canonical_field, allowed_values, label in aliases:
+        if legacy_field not in data:
+            continue
+        legacy_value = data[legacy_field] or None
+        if legacy_value is None and canonical_field in data:
+            # Current forms may still carry an empty legacy alias. Treat it as
+            # unspecified so the canonical field remains authoritative.
+            continue
+        if legacy_value is not None and legacy_value not in allowed_values:
+            return f"{label}必須為：{allowed_values}"
+        if canonical_field in data:
+            canonical_value = data[canonical_field] or None
+            if canonical_value != legacy_value:
+                return f"{label}的新舊欄位不可指定不同值"
+        else:
+            data[canonical_field] = legacy_value
+    return None
+
+
 def _normalize_sales_dates(data):
     value = data.get("next_action_due_date")
     if value:
@@ -194,6 +219,9 @@ def get_customer(customer_id):
 @login_required
 def create_customer():
     data = request.get_json(silent=True) or {}
+    alias_error = _normalize_legacy_aliases(data)
+    if alias_error:
+        return jsonify({"error": alias_error}), 400
     date_error = _normalize_sales_dates(data)
     if date_error:
         return jsonify({"error": date_error}), 400
@@ -225,6 +253,9 @@ def create_customer():
 def update_customer(customer_id):
     customer = db.get_or_404(Customer, customer_id)
     data = request.get_json(silent=True) or {}
+    alias_error = _normalize_legacy_aliases(data)
+    if alias_error:
+        return jsonify({"error": alias_error}), 400
     date_error = _normalize_sales_dates(data)
     if date_error:
         return jsonify({"error": date_error}), 400
