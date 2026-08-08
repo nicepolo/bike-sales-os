@@ -4,11 +4,13 @@ import CustomerForm from "../components/CustomerForm";
 
 const CHANNELS = ["B2B", "B2C", "經銷"];
 const STATUSES = ["詢問中", "預約試騎", "已試騎", "已成交", "未成交"];
+const ACTIVE_STATUSES = ["詢問中", "預約試騎", "已試騎"];
 const SALES_OWNERS = ["Polo", "Daniel"];
+const OWNER_VIEWS = [{ key: "Polo", label: "Polo" }, { key: "Daniel", label: "Daniel" }, { key: "unassigned", label: "未指派" }];
 const SOURCE_PLATFORMS = ["TikTok", "Facebook廣告", "Facebook社團", "Instagram", "移工社群", "LINE", "朋友介紹", "現場", "其他"];
 
 function isOverdue(customer) {
-  if (!customer.next_action_due_date) return false;
+  if (!customer.next_action_due_date || !ACTIVE_STATUSES.includes(customer.status)) return false;
   const taipeiNow = new Date(Date.now() + 8 * 60 * 60 * 1000);
   const today = taipeiNow.toISOString().slice(0, 10);
   return customer.next_action_due_date < today;
@@ -19,16 +21,19 @@ export default function Customers() {
   const [filters, setFilters] = useState({ channel: "", status: "", sales_owner: "", source_platform: "", overdue: false });
   const [editing, setEditing] = useState(null);
   const [error, setError] = useState("");
+  const [workload, setWorkload] = useState({});
 
   async function load() {
     const params = Object.fromEntries(Object.entries(filters).filter(([key, value]) => key !== "status" && value));
     const res = await client.get("/customers", { params });
     setCustomers(res.data);
   }
+  async function loadWorkload() { const res = await client.get("/customers/workload"); setWorkload(res.data); }
 
   useEffect(() => {
     load().catch(() => setError("客戶資料載入失敗"));
   }, [filters.channel, filters.sales_owner, filters.source_platform, filters.overdue]);
+  useEffect(() => { loadWorkload().catch(() => setError("負責人工作量載入失敗")); }, []);
 
   const counts = useMemo(() => Object.fromEntries(STATUSES.map((status) => [status, customers.filter((c) => c.status === status).length])), [customers]);
   const visibleCustomers = useMemo(() => filters.status ? customers.filter((customer) => customer.status === filters.status) : customers, [customers, filters.status]);
@@ -41,13 +46,13 @@ export default function Customers() {
     if (editing?.id) await client.put(`/customers/${editing.id}`, data);
     else await client.post("/customers", data);
     setEditing(null);
-    await load();
+    await Promise.all([load(), loadWorkload()]);
   }
 
   async function handleDelete(customer) {
     if (!window.confirm(`確定要刪除客戶「${customer.name}」嗎？`)) return;
     await client.delete(`/customers/${customer.id}`);
-    await load();
+    await Promise.all([load(), loadWorkload()]);
   }
 
   return (
@@ -55,6 +60,16 @@ export default function Customers() {
       <div className="page-heading-row">
         <h1 className="page-title">客戶銷售漏斗</h1>
         <button className="btn" onClick={() => setEditing({})}>+ 新增客戶</button>
+      </div>
+
+      <div className="owner-workload-grid">
+        {OWNER_VIEWS.map(({ key, label }) => {
+          const metrics = workload[label] || {};
+          return <button key={key} aria-pressed={filters.sales_owner === key} className={`owner-workload-card ${filters.sales_owner === key ? "active" : ""}`} onClick={() => setFilter("sales_owner", filters.sales_owner === key ? "" : key)}>
+            <strong>{label}</strong><span>{metrics.active || 0} 位進行中</span>
+            <small>今日 {metrics.due_today || 0}・逾期 {metrics.overdue || 0}・未排下一步 {metrics.no_next_action || 0}</small>
+          </button>;
+        })}
       </div>
 
       <div className="funnel-grid">
@@ -67,7 +82,7 @@ export default function Customers() {
 
       <div className="toolbar customer-filters">
         <select value={filters.channel} onChange={(e) => setFilter("channel", e.target.value)}><option value="">全部客群類型</option>{CHANNELS.map((v) => <option key={v}>{v}</option>)}</select>
-        <select value={filters.sales_owner} onChange={(e) => setFilter("sales_owner", e.target.value)}><option value="">全部負責人</option>{SALES_OWNERS.map((v) => <option key={v}>{v}</option>)}</select>
+        <select value={filters.sales_owner} onChange={(e) => setFilter("sales_owner", e.target.value)}><option value="">全部負責人</option>{SALES_OWNERS.map((v) => <option key={v}>{v}</option>)}<option value="unassigned">未指派</option></select>
         <select value={filters.source_platform} onChange={(e) => setFilter("source_platform", e.target.value)}><option value="">全部來源</option>{SOURCE_PLATFORMS.map((v) => <option key={v}>{v}</option>)}</select>
         <label className="overdue-filter"><input type="checkbox" checked={filters.overdue} onChange={(e) => setFilter("overdue", e.target.checked)} /> 只看逾期追蹤</label>
       </div>

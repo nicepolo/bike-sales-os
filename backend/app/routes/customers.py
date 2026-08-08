@@ -10,6 +10,7 @@ from app.models.vehicle import Vehicle
 
 bp = Blueprint("customers", __name__, url_prefix="/api/customers")
 TAIPEI_TIMEZONE = timezone(timedelta(hours=8))
+ACTIVE_STATUSES = ("詢問中", "預約試騎", "已試騎")
 
 EDITABLE_FIELDS = [
     "name",
@@ -100,15 +101,32 @@ def list_customers():
         query = query.filter_by(channel=channel)
     if status:
         query = query.filter_by(status=status)
-    if sales_owner:
+    if sales_owner == "unassigned":
+        query = query.filter(Customer.sales_owner.is_(None))
+    elif sales_owner:
         query = query.filter_by(sales_owner=sales_owner)
     if source_platform:
         query = query.filter_by(source_platform=source_platform)
     if overdue:
         taipei_today = datetime.now(TAIPEI_TIMEZONE).date()
-        query = query.filter(Customer.next_action_due_date < taipei_today)
+        query = query.filter(Customer.status.in_(ACTIVE_STATUSES), Customer.next_action_due_date < taipei_today)
     customers = query.order_by(Customer.created_at.desc()).all()
     return jsonify([c.to_dict() for c in customers])
+
+
+@bp.get("/workload")
+@login_required
+def sales_workload():
+    taipei_today = datetime.now(TAIPEI_TIMEZONE).date()
+    result = {label: {"active": 0, "due_today": 0, "overdue": 0, "no_next_action": 0} for label in (*SALES_OWNERS, "未指派")}
+    active_customers = Customer.query.with_entities(Customer.sales_owner, Customer.next_action, Customer.next_action_due_date).filter(Customer.status.in_(ACTIVE_STATUSES)).all()
+    for owner, next_action, due_date in active_customers:
+        label = owner if owner in SALES_OWNERS else "未指派"
+        result[label]["active"] += 1
+        result[label]["due_today"] += int(due_date == taipei_today)
+        result[label]["overdue"] += int(due_date is not None and due_date < taipei_today)
+        result[label]["no_next_action"] += int(not next_action)
+    return jsonify(result)
 
 
 @bp.get("/<int:customer_id>")
