@@ -3,11 +3,12 @@ import client from "../api/client";
 import CustomerForm from "../components/CustomerForm";
 
 const CHANNELS = ["B2B", "B2C", "經銷"];
-const STATUSES = ["詢問中", "預約試騎", "已試騎", "已成交", "未成交"];
-const ACTIVE_STATUSES = ["詢問中", "預約試騎", "已試騎"];
+const STATUSES = ["新詢問", "已聯絡", "預約試騎", "已下訂", "已付款", "已交車", "流失"];
+const ACTIVE_STATUSES = ["新詢問", "已聯絡", "預約試騎"];
 const SALES_OWNERS = ["Polo", "Daniel"];
 const OWNER_VIEWS = [{ key: "Polo", label: "Polo" }, { key: "Daniel", label: "Daniel" }, { key: "unassigned", label: "未指派" }];
-const SOURCE_PLATFORMS = ["TikTok", "Facebook廣告", "Facebook社團", "Instagram", "移工社群", "LINE", "朋友介紹", "現場", "其他"];
+const SOURCES = ["TikTok", "Facebook", "Instagram", "Facebook社團", "LINE", "朋友介紹", "現場", "其他"];
+const CUSTOMER_SEGMENTS = ["學生", "外籍移工", "通勤族", "親子家庭", "銀髮族", "其他"];
 
 function isOverdue(customer) {
   if (!customer.next_action_due_date || !ACTIVE_STATUSES.includes(customer.status)) return false;
@@ -18,7 +19,7 @@ function isOverdue(customer) {
 
 export default function Customers() {
   const [customers, setCustomers] = useState([]);
-  const [filters, setFilters] = useState({ channel: "", status: "", sales_owner: "", source_platform: "", follow_up: "" });
+  const [filters, setFilters] = useState({ channel: "", status: "", sales_owner: "", source: "", customer_segment: "", follow_up: "" });
   const [editing, setEditing] = useState(null);
   const [error, setError] = useState("");
   const [workload, setWorkload] = useState({});
@@ -29,15 +30,15 @@ export default function Customers() {
     setCustomers(res.data);
   }
   async function loadWorkload() {
-    const params = Object.fromEntries(Object.entries({ channel: filters.channel, source_platform: filters.source_platform }).filter(([, value]) => value));
+    const params = Object.fromEntries(Object.entries({ channel: filters.channel, source: filters.source, customer_segment: filters.customer_segment }).filter(([, value]) => value));
     const res = await client.get("/customers/workload", { params });
     setWorkload(res.data);
   }
 
   useEffect(() => {
     load().catch(() => setError("客戶資料載入失敗"));
-  }, [filters.channel, filters.sales_owner, filters.source_platform, filters.follow_up]);
-  useEffect(() => { loadWorkload().catch(() => setError("負責人工作量載入失敗")); }, [filters.channel, filters.source_platform]);
+  }, [filters.channel, filters.sales_owner, filters.source, filters.customer_segment, filters.follow_up]);
+  useEffect(() => { loadWorkload().catch(() => setError("負責人工作量載入失敗")); }, [filters.channel, filters.source, filters.customer_segment]);
 
   const counts = useMemo(() => Object.fromEntries(STATUSES.map((status) => [status, customers.filter((c) => c.status === status).length])), [customers]);
   const visibleCustomers = useMemo(() => filters.status ? customers.filter((customer) => customer.status === filters.status) : customers, [customers, filters.status]);
@@ -107,7 +108,8 @@ export default function Customers() {
       <div className="toolbar customer-filters">
         <select value={filters.channel} onChange={(e) => setFilter("channel", e.target.value)}><option value="">全部客群類型</option>{CHANNELS.map((v) => <option key={v}>{v}</option>)}</select>
         <select value={filters.sales_owner} onChange={(e) => setFilter("sales_owner", e.target.value)}><option value="">全部負責人</option>{SALES_OWNERS.map((v) => <option key={v}>{v}</option>)}<option value="unassigned">未指派</option></select>
-        <select value={filters.source_platform} onChange={(e) => setFilter("source_platform", e.target.value)}><option value="">全部來源</option>{SOURCE_PLATFORMS.map((v) => <option key={v}>{v}</option>)}</select>
+        <select value={filters.source} onChange={(e) => setFilter("source", e.target.value)}><option value="">全部來源</option>{SOURCES.map((v) => <option key={v}>{v}</option>)}</select>
+        <select value={filters.customer_segment} onChange={(e) => setFilter("customer_segment", e.target.value)}><option value="">全部客群</option>{CUSTOMER_SEGMENTS.map((v) => <option key={v}>{v}</option>)}</select>
       </div>
 
       {error && <div className="error-text">{error}</div>}
@@ -115,11 +117,12 @@ export default function Customers() {
         {visibleCustomers.map((customer) => (
           <article className={`customer-card ${isOverdue(customer) ? "overdue" : ""}`} key={customer.id}>
             <div className="customer-card-header"><strong>{customer.name}</strong><span className="status-badge">{customer.status}</span></div>
-            <div className="customer-meta"><span>{customer.sales_owner || "未指派"}</span><span>{customer.source_platform || "來源未設定"}</span><span>{customer.channel}</span><span>{customer.contact || "無聯絡資料"}</span></div>
+            <div className="customer-meta"><span>{customer.sales_owner || "未指派"}</span><span>{customer.source || "來源未設定"}</span><span>{customer.customer_segment || "客群未設定"}</span><span>{customer.language || "語言未設定"}</span><span>{customer.channel}</span><span>{customer.contact || "無聯絡資料"}</span></div>
             <div className="customer-sales-detail">
               <span>車輛：<strong>{customer.vehicle_code || "未指定"}</strong></span>
               <span>成交金額：<strong>{customer.deal_amount != null ? `NT$ ${customer.deal_amount.toLocaleString()}` : "未設定"}</strong></span>
               <span>成交日期：<strong>{customer.deal_date || "未設定"}</strong></span>
+              <span>預計台數：<strong>{customer.interested_quantity || "未設定"}</strong></span>
             </div>
             <div className="next-action"><span>下一步</span><strong>{customer.next_action || "尚未設定"}</strong><small className={isOverdue(customer) ? "overdue-text" : ""}>{customer.next_action_due_date || "無日期"}{isOverdue(customer) ? "（已逾期）" : ""}</small></div>
             <div className="customer-card-actions"><button className="btn btn-secondary" onClick={() => setEditing(customer)}>編輯</button><button className="btn btn-danger" onClick={() => handleDelete(customer)}>刪除</button></div>

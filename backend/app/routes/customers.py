@@ -6,12 +6,16 @@ from flask_login import login_required
 from sqlalchemy import or_
 
 from app.extensions import db
-from app.models.customer import CHANNELS, CUSTOMER_STATUSES, SALES_OWNERS, SOURCE_PLATFORMS, Customer
+from app.models.customer import (
+    CHANNELS, CUSTOMER_SEGMENTS, CUSTOMER_STATUSES, LANGUAGES, SALES_OWNERS,
+    SOURCES, SOURCE_PLATFORMS, Customer,
+)
 from app.models.vehicle import Vehicle
 
 bp = Blueprint("customers", __name__, url_prefix="/api/customers")
 TAIPEI_TIMEZONE = timezone(timedelta(hours=8))
-ACTIVE_STATUSES = ("詢問中", "預約試騎", "已試騎")
+ACTIVE_STATUSES = ("新詢問", "已聯絡", "預約試騎")
+DEAL_STATUSES = ("已下訂", "已付款", "已交車")
 
 EDITABLE_FIELDS = [
     "name",
@@ -30,6 +34,10 @@ EDITABLE_FIELDS = [
     "interested_price",
     "next_action",
     "next_action_due_date",
+    "customer_segment",
+    "source",
+    "language",
+    "interested_quantity",
     "notes",
 ]
 
@@ -47,18 +55,32 @@ def _validate(data, partial=False):
         return f"負責人必須為：{SALES_OWNERS}"
     if data.get("source_platform") and data["source_platform"] not in SOURCE_PLATFORMS:
         return f"來源平台必須為：{SOURCE_PLATFORMS}"
+    if data.get("customer_segment") and data["customer_segment"] not in CUSTOMER_SEGMENTS:
+        return f"客群必須為：{CUSTOMER_SEGMENTS}"
+    if data.get("source") and data["source"] not in SOURCES:
+        return f"來源必須為：{SOURCES}"
+    if data.get("language") and data["language"] not in LANGUAGES:
+        return f"語言必須為：{LANGUAGES}"
     return None
 
 
-def _resolve_deal_date(customer, data, previous_status):
+def _resolve_deal_date(customer, data):
     # 手動指定 deal_date（例如補登歷史成交紀錄）優先
     if "deal_date" in data:
         customer.deal_date = data["deal_date"]
         return
-    if customer.status == "已成交" and previous_status != "已成交":
+    if customer.status in DEAL_STATUSES and customer.deal_date is None:
         customer.deal_date = datetime.now(TAIPEI_TIMEZONE).date()
-    elif customer.status != "已成交":
-        customer.deal_date = None
+
+
+def _sync_legacy_sales_fields(data):
+    """Keep legacy columns readable while canonical CRM fields are adopted."""
+    if "customer_segment" in data:
+        data["audience_segment"] = data["customer_segment"]
+    if "language" in data:
+        data["preferred_language"] = data["language"]
+    if "source" in data:
+        data["source_platform"] = "Facebook廣告" if data["source"] == "Facebook" else data["source"]
 
 
 def _normalize_sales_dates(data):
@@ -74,7 +96,7 @@ def _normalize_sales_dates(data):
 
 
 def _normalize_sales_fields(data):
-    for field in ("sales_owner", "source_platform", "audience_segment", "preferred_language", "next_action"):
+    for field in ("sales_owner", "source_platform", "audience_segment", "preferred_language", "next_action", "customer_segment", "source", "language"):
         if field in data and data[field] == "":
             data[field] = None
 
@@ -86,6 +108,17 @@ def _normalize_sales_fields(data):
         if price < 0:
             return "預算／有興趣價格不可小於 0"
         data["interested_price"] = price
+    if data.get("interested_quantity") is not None:
+        value = data["interested_quantity"]
+        if isinstance(value, bool):
+            return "預計購買台數必須為正整數"
+        try:
+            quantity = int(value)
+        except (TypeError, ValueError):
+            return "預計購買台數必須為正整數"
+        if quantity <= 0 or str(value).strip() != str(quantity):
+            return "預計購買台數必須為正整數"
+        data["interested_quantity"] = quantity
     return None
 
 
@@ -96,6 +129,8 @@ def list_customers():
     status = request.args.get("status")
     sales_owner = request.args.get("sales_owner")
     source_platform = request.args.get("source_platform")
+    source = request.args.get("source")
+    customer_segment = request.args.get("customer_segment")
     overdue = request.args.get("overdue") == "true"
     follow_up = request.args.get("follow_up")
     query = Customer.query
@@ -109,6 +144,10 @@ def list_customers():
         query = query.filter_by(sales_owner=sales_owner)
     if source_platform:
         query = query.filter_by(source_platform=source_platform)
+    if source:
+        query = query.filter_by(source=source)
+    if customer_segment:
+        query = query.filter_by(customer_segment=customer_segment)
     taipei_today = datetime.now(TAIPEI_TIMEZONE).date()
     if overdue or follow_up == "overdue":
         query = query.filter(Customer.status.in_(ACTIVE_STATUSES), Customer.next_action_due_date < taipei_today)
@@ -130,6 +169,10 @@ def sales_workload():
         active_query = active_query.filter(Customer.channel == request.args["channel"])
     if request.args.get("source_platform"):
         active_query = active_query.filter(Customer.source_platform == request.args["source_platform"])
+    if request.args.get("source"):
+        active_query = active_query.filter(Customer.source == request.args["source"])
+    if request.args.get("customer_segment"):
+        active_query = active_query.filter(Customer.customer_segment == request.args["customer_segment"])
     active_customers = active_query.all()
     for owner, next_action, due_date in active_customers:
         label = owner if owner in SALES_OWNERS else "未指派"
@@ -157,6 +200,7 @@ def create_customer():
     sales_error = _normalize_sales_fields(data)
     if sales_error:
         return jsonify({"error": sales_error}), 400
+    _sync_legacy_sales_fields(data)
     error = _validate(data)
     if error:
         return jsonify({"error": error}), 400
@@ -166,10 +210,10 @@ def create_customer():
 
     customer = Customer(**{field: data.get(field) for field in EDITABLE_FIELDS if field in data})
     if not customer.status:
-        customer.status = "詢問中"
+        customer.status = "新詢問"
     customer.is_batch_deal = bool(customer.is_batch_deal)
 
-    _resolve_deal_date(customer, data, previous_status=None)
+    _resolve_deal_date(customer, data)
 
     db.session.add(customer)
     db.session.commit()
@@ -187,6 +231,7 @@ def update_customer(customer_id):
     sales_error = _normalize_sales_fields(data)
     if sales_error:
         return jsonify({"error": sales_error}), 400
+    _sync_legacy_sales_fields(data)
     error = _validate(data, partial=True)
     if error:
         return jsonify({"error": error}), 400
@@ -194,13 +239,11 @@ def update_customer(customer_id):
     if data.get("vehicle_id") and not db.session.get(Vehicle, data["vehicle_id"]):
         return jsonify({"error": "找不到對應車輛"}), 400
 
-    previous_status = customer.status
-
     for field in EDITABLE_FIELDS:
         if field in data:
             setattr(customer, field, data[field])
 
-    _resolve_deal_date(customer, data, previous_status)
+    _resolve_deal_date(customer, data)
 
     db.session.commit()
     return jsonify(customer.to_dict())

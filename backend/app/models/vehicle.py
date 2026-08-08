@@ -21,7 +21,7 @@ class Vehicle(db.Model):
         db.CheckConstraint(f"status IN {VEHICLE_STATUSES}", name="ck_vehicles_status"),
     )
 
-    id = db.Column(db.BigInteger, primary_key=True)
+    id = db.Column(db.BigInteger().with_variant(db.Integer, "sqlite"), primary_key=True)
     vehicle_code = db.Column(db.String(50), nullable=False, unique=True)
     battery_code = db.Column(db.String(100))
     battery_health = db.Column(db.String(100))

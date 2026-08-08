@@ -9,11 +9,11 @@ def seed_customers(app):
     today = datetime.now(TAIPEI_TIMEZONE).date()
     with app.app_context():
         db.session.add_all([
-            Customer(id=1, name="Polo 逾期", channel="B2C", status="詢問中", sales_owner="Polo", source_platform="TikTok", next_action="電話", next_action_due_date=today - timedelta(days=1)),
-            Customer(id=2, name="Polo 今日", channel="B2C", status="預約試騎", sales_owner="Polo", source_platform="Facebook廣告", next_action="確認試騎", next_action_due_date=today),
-            Customer(id=3, name="Daniel 未安排", channel="B2B", status="已試騎", sales_owner="Daniel", source_platform="TikTok"),
-            Customer(id=4, name="未指派", channel="經銷", status="詢問中"),
-            Customer(id=5, name="已成交不計", channel="B2C", status="已成交", sales_owner="Polo", next_action_due_date=today - timedelta(days=2)),
+            Customer(id=1, name="Polo 逾期", channel="B2C", status="新詢問", sales_owner="Polo", source="TikTok", customer_segment="學生", next_action="電話", next_action_due_date=today - timedelta(days=1)),
+            Customer(id=2, name="Polo 今日", channel="B2C", status="預約試騎", sales_owner="Polo", source="Facebook", customer_segment="通勤族", next_action="確認試騎", next_action_due_date=today),
+            Customer(id=3, name="Daniel 未安排", channel="B2B", status="已聯絡", sales_owner="Daniel", source="TikTok", customer_segment="學生"),
+            Customer(id=4, name="未指派", channel="經銷", status="新詢問"),
+            Customer(id=5, name="已下訂不計", channel="B2C", status="已下訂", sales_owner="Polo", next_action_due_date=today - timedelta(days=2)),
         ])
         db.session.commit()
 
@@ -62,8 +62,15 @@ def test_follow_up_queue_combines_with_owner_filter(app, authenticated_client):
 def test_workload_respects_channel_and_source_context(app, authenticated_client):
     seed_customers(app)
     by_channel = authenticated_client.get("/api/customers/workload?channel=B2B").get_json()
-    by_source = authenticated_client.get("/api/customers/workload?source_platform=TikTok").get_json()
+    by_source = authenticated_client.get("/api/customers/workload?source=TikTok").get_json()
     assert by_channel["Daniel"]["active"] == 1
     assert by_channel["Polo"]["active"] == 0
     assert by_source["Polo"]["active"] == 1
     assert by_source["Daniel"]["active"] == 1
+
+
+def test_workload_respects_customer_segment(app, authenticated_client):
+    seed_customers(app)
+    payload = authenticated_client.get("/api/customers/workload?customer_segment=學生").get_json()
+    assert payload["Polo"]["active"] == 1
+    assert payload["Daniel"]["active"] == 1

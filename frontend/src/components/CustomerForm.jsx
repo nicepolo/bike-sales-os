@@ -2,14 +2,14 @@ import { useEffect, useState } from "react";
 import client from "../api/client";
 
 const CHANNELS = ["B2B", "B2C", "經銷"];
-const STATUSES = ["詢問中", "預約試騎", "已試騎", "已成交", "未成交"];
+const STATUSES = ["新詢問", "已聯絡", "預約試騎", "已下訂", "已付款", "已交車", "流失"];
 
 const EMPTY = {
   name: "",
   contact: "",
   channel: "B2C",
   vehicle_id: "",
-  status: "詢問中",
+  status: "新詢問",
   deal_amount: "",
   is_batch_deal: false,
   batch_note: "",
@@ -22,10 +22,16 @@ const EMPTY = {
   interested_price: "",
   next_action: "",
   next_action_due_date: "",
+  customer_segment: "",
+  source: "",
+  language: "",
+  interested_quantity: "",
 };
 
 const SALES_OWNERS = ["Polo", "Daniel"];
-const SOURCE_PLATFORMS = ["TikTok", "Facebook廣告", "Facebook社團", "Instagram", "移工社群", "LINE", "朋友介紹", "現場", "其他"];
+const SOURCES = ["TikTok", "Facebook", "Instagram", "Facebook社團", "LINE", "朋友介紹", "現場", "其他"];
+const CUSTOMER_SEGMENTS = ["學生", "外籍移工", "通勤族", "親子家庭", "銀髮族", "其他"];
+const LANGUAGES = ["中文", "越南文", "印尼文", "泰文", "其他"];
 
 export default function CustomerForm({ initial, onSubmit, onCancel }) {
   const [form, setForm] = useState(() => ({
@@ -34,6 +40,7 @@ export default function CustomerForm({ initial, onSubmit, onCancel }) {
     vehicle_id: initial?.vehicle_id ?? "",
     deal_amount: initial?.deal_amount ?? "",
     interested_price: initial?.interested_price ?? "",
+    interested_quantity: initial?.interested_quantity ?? "",
   }));
   const [vehicles, setVehicles] = useState([]);
   const [error, setError] = useState("");
@@ -57,6 +64,7 @@ export default function CustomerForm({ initial, onSubmit, onCancel }) {
         vehicle_id: form.vehicle_id === "" ? null : Number(form.vehicle_id),
         deal_amount: form.deal_amount === "" ? null : Number(form.deal_amount),
         interested_price: form.interested_price === "" ? null : Number(form.interested_price),
+        interested_quantity: form.interested_quantity === "" ? null : Number(form.interested_quantity),
       });
     } catch (err) {
       setError(err.response?.data?.error || "儲存失敗");
@@ -79,10 +87,10 @@ export default function CustomerForm({ initial, onSubmit, onCancel }) {
               </select>
             </div>
             <div className="form-field">
-              <label>來源平台</label>
-              <select value={form.source_platform} onChange={(e) => update("source_platform", e.target.value)}>
+              <label>來源</label>
+              <select value={form.source} onChange={(e) => update("source", e.target.value)}>
                 <option value="">未設定</option>
-                {SOURCE_PLATFORMS.map((source) => <option key={source} value={source}>{source}</option>)}
+                {SOURCES.map((source) => <option key={source} value={source}>{source}</option>)}
               </select>
             </div>
             <div className="form-field">
@@ -169,9 +177,10 @@ export default function CustomerForm({ initial, onSubmit, onCancel }) {
             </div>
           </div>
           <div className="form-grid sales-tracking-fields">
-            <div className="form-field"><label>客群</label><input type="text" value={form.audience_segment} onChange={(e) => update("audience_segment", e.target.value)} /></div>
-            <div className="form-field"><label>偏好語言</label><input type="text" value={form.preferred_language} onChange={(e) => update("preferred_language", e.target.value)} /></div>
+            <div className="form-field"><label>客群</label><select value={form.customer_segment} onChange={(e) => update("customer_segment", e.target.value)}><option value="">未設定</option>{CUSTOMER_SEGMENTS.map((value) => <option key={value}>{value}</option>)}</select></div>
+            <div className="form-field"><label>偏好語言</label><select value={form.language} onChange={(e) => update("language", e.target.value)}><option value="">未設定</option>{LANGUAGES.map((value) => <option key={value}>{value}</option>)}</select></div>
             <div className="form-field"><label>預算／有興趣價格</label><input type="number" min="0" value={form.interested_price} onChange={(e) => update("interested_price", e.target.value)} /></div>
+            <div className="form-field"><label>預計購買台數</label><input type="number" min="1" step="1" value={form.interested_quantity} onChange={(e) => update("interested_quantity", e.target.value)} /></div>
             <div className="form-field"><label>下次追蹤日期</label><input type="date" value={form.next_action_due_date || ""} onChange={(e) => update("next_action_due_date", e.target.value)} /></div>
             <div className="form-field full"><label>下一步行動</label><input type="text" value={form.next_action} onChange={(e) => update("next_action", e.target.value)} placeholder="例如：明天下午電話確認試騎" /></div>
           </div>

@@ -7,6 +7,8 @@ from sqlalchemy import func
 from app.extensions import db
 from app.models.customer import CHANNELS, Customer
 
+DEAL_STATUSES = ("已下訂", "已付款", "已交車")
+
 bp = Blueprint("dashboard", __name__, url_prefix="/api/dashboard")
 
 
@@ -22,13 +24,13 @@ def summary():
         total_inquiries = base.count()
         today_inquiries = base.filter(func.date(Customer.created_at) == today).count()
 
-        deals = base.filter_by(status="已成交")
+        deals = base.filter(Customer.status.in_(DEAL_STATUSES))
         total_deals = deals.count()
         today_deals = deals.filter(Customer.deal_date == today).count()
 
         total_deal_amount = (
             db.session.query(func.coalesce(func.sum(Customer.deal_amount), 0))
-            .filter(Customer.channel == channel, Customer.status == "已成交")
+            .filter(Customer.channel == channel, Customer.status.in_(DEAL_STATUSES))
             .scalar()
         )
 
