@@ -18,7 +18,7 @@ function isOverdue(customer) {
 
 export default function Customers() {
   const [customers, setCustomers] = useState([]);
-  const [filters, setFilters] = useState({ channel: "", status: "", sales_owner: "", source_platform: "", overdue: false });
+  const [filters, setFilters] = useState({ channel: "", status: "", sales_owner: "", source_platform: "", follow_up: "" });
   const [editing, setEditing] = useState(null);
   const [error, setError] = useState("");
   const [workload, setWorkload] = useState({});
@@ -28,18 +28,37 @@ export default function Customers() {
     const res = await client.get("/customers", { params });
     setCustomers(res.data);
   }
-  async function loadWorkload() { const res = await client.get("/customers/workload"); setWorkload(res.data); }
+  async function loadWorkload() {
+    const params = Object.fromEntries(Object.entries({ channel: filters.channel, source_platform: filters.source_platform }).filter(([, value]) => value));
+    const res = await client.get("/customers/workload", { params });
+    setWorkload(res.data);
+  }
 
   useEffect(() => {
     load().catch(() => setError("客戶資料載入失敗"));
-  }, [filters.channel, filters.sales_owner, filters.source_platform, filters.overdue]);
-  useEffect(() => { loadWorkload().catch(() => setError("負責人工作量載入失敗")); }, []);
+  }, [filters.channel, filters.sales_owner, filters.source_platform, filters.follow_up]);
+  useEffect(() => { loadWorkload().catch(() => setError("負責人工作量載入失敗")); }, [filters.channel, filters.source_platform]);
 
   const counts = useMemo(() => Object.fromEntries(STATUSES.map((status) => [status, customers.filter((c) => c.status === status).length])), [customers]);
   const visibleCustomers = useMemo(() => filters.status ? customers.filter((customer) => customer.status === filters.status) : customers, [customers, filters.status]);
+  const selectedWorkload = useMemo(() => {
+    const label = OWNER_VIEWS.find((owner) => owner.key === filters.sales_owner)?.label;
+    if (label) return workload[label] || {};
+    return Object.values(workload).reduce((total, metrics) => ({
+      active: (total.active || 0) + (metrics.active || 0),
+      due_today: (total.due_today || 0) + (metrics.due_today || 0),
+      overdue: (total.overdue || 0) + (metrics.overdue || 0),
+      no_next_action: (total.no_next_action || 0) + (metrics.no_next_action || 0),
+    }), {});
+  }, [workload, filters.sales_owner]);
 
   function setFilter(field, value) {
-    setFilters((current) => ({ ...current, [field]: value }));
+    setFilters((current) => {
+      const next = { ...current, [field]: value };
+      if (field === "follow_up" && value) next.status = "";
+      if (field === "status" && value && !ACTIVE_STATUSES.includes(value)) next.follow_up = "";
+      return next;
+    });
   }
 
   async function handleSubmit(data) {
@@ -72,6 +91,11 @@ export default function Customers() {
         })}
       </div>
 
+      <div className="follow-up-queues" aria-label="待跟進工作佇列">
+        {[{ key: "due_today", label: "今日到期", count: selectedWorkload.due_today }, { key: "overdue", label: "已逾期", count: selectedWorkload.overdue }, { key: "no_next_action", label: "未排下一步", count: selectedWorkload.no_next_action }].map((queue) => <button key={queue.key} aria-pressed={filters.follow_up === queue.key} className={filters.follow_up === queue.key ? "active" : ""} onClick={() => setFilter("follow_up", filters.follow_up === queue.key ? "" : queue.key)}><span>{queue.label}</span><strong>{queue.count || 0}</strong></button>)}
+        {filters.follow_up && <button className="clear-queue" onClick={() => setFilter("follow_up", "")}>顯示全部</button>}
+      </div>
+
       <div className="funnel-grid">
         {STATUSES.map((status) => (
           <button key={status} aria-pressed={filters.status === status} className={`funnel-card ${filters.status === status ? "active" : ""}`} onClick={() => setFilter("status", filters.status === status ? "" : status)}>
@@ -84,7 +108,6 @@ export default function Customers() {
         <select value={filters.channel} onChange={(e) => setFilter("channel", e.target.value)}><option value="">全部客群類型</option>{CHANNELS.map((v) => <option key={v}>{v}</option>)}</select>
         <select value={filters.sales_owner} onChange={(e) => setFilter("sales_owner", e.target.value)}><option value="">全部負責人</option>{SALES_OWNERS.map((v) => <option key={v}>{v}</option>)}<option value="unassigned">未指派</option></select>
         <select value={filters.source_platform} onChange={(e) => setFilter("source_platform", e.target.value)}><option value="">全部來源</option>{SOURCE_PLATFORMS.map((v) => <option key={v}>{v}</option>)}</select>
-        <label className="overdue-filter"><input type="checkbox" checked={filters.overdue} onChange={(e) => setFilter("overdue", e.target.checked)} /> 只看逾期追蹤</label>
       </div>
 
       {error && <div className="error-text">{error}</div>}

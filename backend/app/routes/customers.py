@@ -3,6 +3,7 @@ from decimal import Decimal, InvalidOperation
 
 from flask import Blueprint, jsonify, request
 from flask_login import login_required
+from sqlalchemy import or_
 
 from app.extensions import db
 from app.models.customer import CHANNELS, CUSTOMER_STATUSES, SALES_OWNERS, SOURCE_PLATFORMS, Customer
@@ -96,6 +97,7 @@ def list_customers():
     sales_owner = request.args.get("sales_owner")
     source_platform = request.args.get("source_platform")
     overdue = request.args.get("overdue") == "true"
+    follow_up = request.args.get("follow_up")
     query = Customer.query
     if channel:
         query = query.filter_by(channel=channel)
@@ -107,9 +109,13 @@ def list_customers():
         query = query.filter_by(sales_owner=sales_owner)
     if source_platform:
         query = query.filter_by(source_platform=source_platform)
-    if overdue:
-        taipei_today = datetime.now(TAIPEI_TIMEZONE).date()
+    taipei_today = datetime.now(TAIPEI_TIMEZONE).date()
+    if overdue or follow_up == "overdue":
         query = query.filter(Customer.status.in_(ACTIVE_STATUSES), Customer.next_action_due_date < taipei_today)
+    elif follow_up == "due_today":
+        query = query.filter(Customer.status.in_(ACTIVE_STATUSES), Customer.next_action_due_date == taipei_today)
+    elif follow_up == "no_next_action":
+        query = query.filter(Customer.status.in_(ACTIVE_STATUSES), or_(Customer.next_action.is_(None), Customer.next_action == ""))
     customers = query.order_by(Customer.created_at.desc()).all()
     return jsonify([c.to_dict() for c in customers])
 
@@ -119,7 +125,12 @@ def list_customers():
 def sales_workload():
     taipei_today = datetime.now(TAIPEI_TIMEZONE).date()
     result = {label: {"active": 0, "due_today": 0, "overdue": 0, "no_next_action": 0} for label in (*SALES_OWNERS, "未指派")}
-    active_customers = Customer.query.with_entities(Customer.sales_owner, Customer.next_action, Customer.next_action_due_date).filter(Customer.status.in_(ACTIVE_STATUSES)).all()
+    active_query = Customer.query.with_entities(Customer.sales_owner, Customer.next_action, Customer.next_action_due_date).filter(Customer.status.in_(ACTIVE_STATUSES))
+    if request.args.get("channel"):
+        active_query = active_query.filter(Customer.channel == request.args["channel"])
+    if request.args.get("source_platform"):
+        active_query = active_query.filter(Customer.source_platform == request.args["source_platform"])
+    active_customers = active_query.all()
     for owner, next_action, due_date in active_customers:
         label = owner if owner in SALES_OWNERS else "未指派"
         result[label]["active"] += 1

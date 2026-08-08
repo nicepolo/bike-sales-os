@@ -380,7 +380,11 @@ tr:hover td {
 .owner-workload-card span { font-size: 14px; }
 .owner-workload-card small { color: #6b7280; }
 .owner-workload-card.active { border-color: #2563eb; background: #eff6ff; color: #1d4ed8; }
-.overdue-filter { display: flex; gap: 6px; align-items: center; font-size: 14px; }
+.follow-up-queues { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px; }
+.follow-up-queues button { flex: 0 0 auto; border: 1px solid #d1d5db; border-radius: 999px; background: #fff; color: #374151; padding: 8px 12px; display: flex; gap: 8px; align-items: center; cursor: pointer; }
+.follow-up-queues button.active { border-color: #dc2626; background: #fef2f2; color: #b91c1c; }
+.follow-up-queues button strong { min-width: 20px; text-align: center; }
+.follow-up-queues .clear-queue { border-style: dashed; }
 .customer-cards { display: grid; gap: 12px; }
 .customer-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; }
 .customer-card.overdue { border-left: 4px solid #dc2626; }
