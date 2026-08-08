@@ -8,7 +8,7 @@ from app.utils.auth import ADMIN_USER_ID, admin_user
 
 
 def create_app():
-    app = Flask(__name__, static_folder="static", static_url_path="/")
+    app = Flask(__name__, static_folder="static", static_url_path="/static")
     app.config.from_object(Config)
 
     db.init_app(app)
@@ -40,6 +40,9 @@ def create_app():
     @app.route("/", defaults={"path": ""})
     @app.route("/<path:path>")
     def serve_frontend(path):
+        if path == "api" or path.startswith("api/"):
+            return jsonify({"error": "找不到 API 路由"}), 404
+
         static_dir = app.static_folder
         target = os.path.join(static_dir, path) if path else None
         if target and os.path.isfile(target):
