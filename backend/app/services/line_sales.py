@@ -54,7 +54,13 @@ def generate_sales_reply(message: str, api_key: str, model: str) -> str:
         raise IntegrationError("OPENAI_API_KEY is not configured")
     result = _post_json(
         "https://api.openai.com/v1/responses",
-        {"model": model, "instructions": SALES_INSTRUCTIONS, "input": message, "max_output_tokens": 300},
+        {
+            "model": model,
+            "instructions": SALES_INSTRUCTIONS,
+            "input": message,
+            "reasoning": {"effort": "low"},
+            "max_output_tokens": 800,
+        },
         {"Authorization": f"Bearer {api_key}"},
         timeout=25,
     )
@@ -66,7 +72,9 @@ def generate_sales_reply(message: str, api_key: str, model: str) -> str:
                     text = content.get("text")
                     break
     if not text:
-        raise IntegrationError("AI response contained no text")
+        reason = (result.get("incomplete_details") or {}).get("reason")
+        detail = f" ({reason})" if reason else ""
+        raise IntegrationError(f"AI response contained no text{detail}")
     return text.strip()[:5000]
 
 
