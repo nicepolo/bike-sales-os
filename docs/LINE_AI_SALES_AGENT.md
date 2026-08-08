@@ -1,5 +1,9 @@
 # Be-Bike AI Sales Agent V1
 
+The official product name used by the agent is `BE-BIKE`. Inputs such as `BE100`, `B100`, or `BE-100` are treated as possible customer mistakes and trigger a short confirmation rather than being presented as official model names.
+
+Until verified product data is connected, the agent must not infer features, specifications, equipment, suitability, price, or stock from generic electric-bike knowledge. Incomplete model responses are replaced with a complete safe fallback before replying to LINE.
+
 ## Webhook
 
 - Endpoint: `POST /api/webhooks/line`

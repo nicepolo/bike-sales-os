@@ -3,7 +3,7 @@ import hashlib
 import hmac
 import json
 
-from app.services.line_sales import generate_sales_reply
+from app.services.line_sales import SAFE_SALES_REPLY, SALES_INSTRUCTIONS, generate_sales_reply
 
 
 def _signed_post(client, payload, secret="line-test-secret"):
@@ -76,3 +76,27 @@ def test_ai_request_reserves_output_tokens_for_reply(monkeypatch):
     assert reply == "您好，請問怎麼稱呼您？"
     assert captured["payload"]["reasoning"] == {"effort": "low"}
     assert captured["payload"]["max_output_tokens"] == 800
+
+
+def test_sales_prompt_uses_official_product_name():
+    assert "正式產品名稱是「BE-BIKE」" in SALES_INSTRUCTIONS
+    assert "不要稱為 BE100 或 B100" in SALES_INSTRUCTIONS
+    assert "您是指 BE-BIKE 嗎？" in SALES_INSTRUCTIONS
+
+
+def test_sales_prompt_forbids_unverified_product_claims():
+    assert "不得依一般電動車常識推測" in SALES_INSTRUCTIONS
+    assert "目前資料待確認" in SALES_INSTRUCTIONS
+
+
+def test_incomplete_ai_response_uses_safe_fallback(monkeypatch):
+    def fake_post(url, payload, headers, timeout):
+        return {
+            "status": "incomplete",
+            "incomplete_details": {"reason": "max_output_tokens"},
+            "output_text": "如需我幫你確認具",
+        }
+
+    monkeypatch.setattr("app.services.line_sales._post_json", fake_post)
+
+    assert generate_sales_reply("請介紹特色", "test-key", "gpt-5-mini") == SAFE_SALES_REPLY
