@@ -13,7 +13,7 @@ def spa_client(app, tmp_path):
     return app.test_client()
 
 
-@pytest.mark.parametrize("path", ["/", "/login", "/dashboard", "/customers"])
+@pytest.mark.parametrize("path", ["/", "/login", "/dashboard", "/customers", "/be-bike"])
 def test_spa_routes_return_index(spa_client, path):
     response = spa_client.get(path)
 
