@@ -27,7 +27,7 @@
 .be-bike-section-heading > p:last-child, .be-bike-price-section p, .be-bike-purchase-hero > p:last-child { color: var(--be-muted); line-height: 1.8; }
 .be-bike-gallery { display: grid; gap: 12px; margin-top: 26px; }
 .be-bike-gallery img { width: 100%; min-height: 260px; max-height: 520px; object-fit: cover; border-radius: 20px; display: block; }
-.be-bike-video { width: 100%; margin-top: 12px; border-radius: 20px; background: #082f33; }
+.be-bike-video { width: 100%; max-width: 100%; margin-top: 12px; border-radius: 20px; background: #082f33; }
 .be-bike-audience { background: var(--be-cream); }
 .be-bike-chip-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .be-bike-chip-grid span { background: #fff; border-radius: 14px; padding: 18px 12px; text-align: center; font-weight: 800; box-shadow: 0 8px 24px rgba(22,79,84,.06); }

@@ -24,7 +24,13 @@ describe("Be-Bike public pages", () => {
     expect(screen.getByText("若本交易依法屬通訊交易，相關解除權及消費者權益依適用法令辦理。")).toBeInTheDocument();
     expect(document.title).toContain("Be-Bike 全新庫存限量出清");
     expect(document.head.querySelector('meta[property="og:title"]')).toHaveAttribute("content", expect.stringContaining("Be-Bike"));
-    expect(container.querySelector("video")).not.toBeInTheDocument();
+    const video = container.querySelector("video");
+    expect(video).toBeInTheDocument();
+    expect(video).toHaveAttribute("controls");
+    expect(video).toHaveAttribute("playsinline");
+    expect(video).toHaveAttribute("preload", "metadata");
+    expect(video).not.toHaveAttribute("autoplay");
+    expect(video.querySelector("source")).toHaveAttribute("src", "/be-bike/be-bike-demo.mp4");
     expect(screen.queryByText(/待上架|VITE_BE_BIKE_VIDEO_URL|後續可直接替換/)).not.toBeInTheDocument();
   });
 

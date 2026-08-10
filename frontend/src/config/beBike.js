@@ -6,7 +6,7 @@ export const BE_BIKE = Object.freeze({
     hero: "/be-bike/be-bike-hero.jpg",
     detail: "/be-bike/be-bike-detail.jpg",
     side: "/be-bike/be-bike-side.jpg",
-    video: (import.meta.env.VITE_BE_BIKE_VIDEO_URL || "").trim(),
+    video: (import.meta.env.VITE_BE_BIKE_VIDEO_URL || "").trim() || "/be-bike/be-bike-demo.mp4",
   }),
 });
 
