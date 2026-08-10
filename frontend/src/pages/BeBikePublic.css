@@ -1,0 +1,103 @@
+:root { --be-green: #164f54; --be-teal: #27777b; --be-mist: #e7f2f1; --be-cream: #f6f0e2; --be-ink: #153438; --be-muted: #5d7376; }
+.be-bike-page { min-height: 100vh; overflow-x: clip; background: #fbfdfc; color: var(--be-ink); font-family: "Microsoft JhengHei", "PingFang TC", system-ui, sans-serif; }
+.be-bike-page * { box-sizing: border-box; }
+.be-bike-header { height: 62px; padding: 0 18px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 20; background: rgba(251,253,252,.95); border-bottom: 1px solid rgba(22,79,84,.12); backdrop-filter: blur(12px); }
+.be-bike-logo { color: var(--be-green); text-decoration: none; font-size: 20px; font-weight: 900; }
+.be-bike-header-cta { color: #fff; background: var(--be-green); padding: 9px 14px; border-radius: 999px; text-decoration: none; font-weight: 800; font-size: 13px; }
+.be-bike-hero { min-height: 720px; position: relative; display: flex; align-items: flex-end; overflow: hidden; }
+.be-bike-hero > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 62% center; }
+.be-bike-hero-overlay { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(7,43,47,.94) 8%, rgba(7,43,47,.45) 58%, rgba(7,43,47,.08)); }
+.be-bike-hero-content { position: relative; z-index: 1; color: #fff; padding: 36px 20px 40px; width: 100%; }
+.be-bike-eyebrow, .be-bike-kicker { color: #2f8588; letter-spacing: .12em; font-size: 12px; font-weight: 900; text-transform: uppercase; }
+.be-bike-eyebrow { color: #bfe5e3; }
+.be-bike-hero h1 { margin: 8px 0 10px; max-width: 100%; font-size: clamp(38px, 10.8vw, 48px); line-height: 1.04; letter-spacing: -.04em; }
+.be-bike-hero h1 > span { display: block; white-space: nowrap; }
+.be-bike-mobile-break { display: block; }
+.be-bike-price { margin: 0 0 16px; font-size: 34px; font-weight: 900; color: #fff6d6; }
+.be-bike-price small { font-size: 15px; }
+.be-bike-hero-points { display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 10px 0 0; list-style: none; }
+.be-bike-hero-points li { padding: 6px 9px; border-radius: 999px; background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25); font-size: 12px; }
+.be-bike-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.be-bike-button { display: inline-flex; justify-content: center; align-items: center; min-height: 48px; padding: 12px 18px; border-radius: 999px; text-decoration: none; font-weight: 900; text-align: center; }
+.be-bike-button-primary { background: #34a853; color: #fff; }
+.be-bike-button-light { background: #fff; color: var(--be-green); }
+.be-bike-button-outline { border: 1px solid currentColor; color: #fff; }
+.be-bike-section { padding: 68px 20px; }
+.be-bike-section h2 { margin: 8px 0 16px; font-size: clamp(30px, 8vw, 52px); line-height: 1.15; }
+.be-bike-section-heading > p:last-child, .be-bike-price-section p, .be-bike-purchase-hero > p:last-child { color: var(--be-muted); line-height: 1.8; }
+.be-bike-gallery { display: grid; gap: 12px; margin-top: 26px; }
+.be-bike-gallery img { width: 100%; min-height: 260px; max-height: 520px; object-fit: cover; border-radius: 20px; display: block; }
+.be-bike-video { width: 100%; margin-top: 12px; border-radius: 20px; background: #082f33; }
+.be-bike-audience { background: var(--be-cream); }
+.be-bike-chip-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.be-bike-chip-grid span { background: #fff; border-radius: 14px; padding: 18px 12px; text-align: center; font-weight: 800; box-shadow: 0 8px 24px rgba(22,79,84,.06); }
+.be-bike-price-section { background: var(--be-green); color: #fff; }
+.be-bike-price-section .be-bike-kicker, .be-bike-price-section p { color: #c5e2e0; }
+.be-bike-before-buying { margin: 22px 20px; padding: 24px 20px; border: 1px solid #e4c77f; border-radius: 18px; background: #fff8e8; }
+.be-bike-before-buying h2 { margin: 7px 0 14px; font-size: 28px; }
+.be-bike-before-buying ul { margin: 0 0 18px; padding-left: 20px; color: #5d5138; line-height: 1.8; }
+.be-bike-before-buying a { color: var(--be-green); font-weight: 900; }
+.be-bike-info-grid { display: grid; gap: 12px; }
+.be-bike-info-grid article { border: 1px solid #d8e7e6; border-radius: 16px; padding: 18px; background: #fff; }
+.be-bike-info-grid strong { font-size: 18px; }
+.be-bike-info-grid p { color: var(--be-muted); line-height: 1.7; margin-bottom: 0; }
+.be-bike-two-column { display: grid; gap: 14px; background: var(--be-mist); }
+.be-bike-two-column article { padding: 22px 18px; border-radius: 18px; background: #fff; }
+.be-bike-two-column h2 { font-size: 30px; }
+.be-bike-two-column ul { padding-left: 20px; margin-bottom: 0; color: #425f63; line-height: 1.8; }
+.be-bike-two-column li { margin-bottom: 10px; }
+.be-bike-two-column li:last-child { margin-bottom: 0; }
+.be-bike-two-column strong { color: #273f43; font-weight: 900; }
+.be-bike-faq-list { display: grid; gap: 10px; }
+.be-bike-faq details { border: 1px solid #d7e5e4; border-radius: 14px; background: #fff; padding: 0 16px; }
+.be-bike-faq summary { cursor: pointer; font-weight: 800; padding: 17px 0; }
+.be-bike-faq details p { margin-top: 0; color: var(--be-muted); line-height: 1.75; }
+.be-bike-final-cta { background: #cbb98f; text-align: center; padding: 48px 20px; }
+.be-bike-final-cta p { margin: 0; font-weight: 800; }
+.be-bike-final-cta h2 { font-size: clamp(34px, 9vw, 58px); margin: 10px auto 28px; max-width: 760px; }
+.be-bike-actions-center { max-width: 520px; margin-left: auto; margin-right: auto; }
+.be-bike-footer { padding: 26px 20px; background: #0c383c; color: #dcebea; display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+.be-bike-footer strong { font-size: 18px; }
+.be-bike-purchase-page { width: min(820px, 100%); margin: 0 auto; padding: 54px 18px 80px; }
+.be-bike-purchase-hero h1 { font-size: clamp(36px, 9vw, 60px); line-height: 1.1; margin: 10px 0 18px; }
+.be-bike-purchase-list { display: grid; gap: 10px; margin-top: 36px; }
+.be-bike-purchase-list section { display: grid; grid-template-columns: 42px 1fr; gap: 12px; padding: 20px 14px; background: #fff; border: 1px solid #d7e5e4; border-radius: 16px; }
+.be-bike-purchase-list section > span { color: var(--be-teal); font-weight: 900; }
+.be-bike-purchase-list h2 { font-size: 18px; margin: 0 0 7px; }
+.be-bike-purchase-list p { margin: 0; color: var(--be-muted); line-height: 1.75; }
+.be-bike-legal-note { margin: 22px 0; padding: 18px; background: #fff7e6; border: 1px solid #efd293; border-radius: 14px; }
+.be-bike-legal-note p { margin-bottom: 0; line-height: 1.7; }
+.be-bike-purchase-actions { display: grid; gap: 12px; text-align: center; }
+.be-bike-purchase-actions > a:last-child { color: var(--be-green); }
+
+@media (max-width: 420px) {
+  .be-bike-hero { min-height: min(720px, calc(100svh - 62px)); }
+  .be-bike-hero-content { padding-left: 18px; padding-right: 18px; }
+  .be-bike-price { font-size: 31px; margin-bottom: 10px; }
+  .be-bike-hero .be-bike-button { min-height: 44px; }
+  .be-bike-final-cta h2 { margin-bottom: 20px; }
+  .be-bike-actions-center { gap: 7px; }
+  .be-bike-actions-center .be-bike-button { min-height: 44px; }
+}
+
+@media (min-width: 700px) {
+  .be-bike-header { height: 70px; padding: 0 6vw; }
+  .be-bike-hero { min-height: 760px; align-items: center; }
+  .be-bike-hero > img { object-position: 56% center; }
+  .be-bike-hero-overlay { background: linear-gradient(90deg, rgba(7,43,47,.92), rgba(7,43,47,.48) 52%, rgba(7,43,47,.05)); }
+  .be-bike-hero-content { width: min(700px, 64vw); padding: 70px 7vw; }
+  .be-bike-hero h1 { font-size: clamp(52px, 7vw, 78px); }
+  .be-bike-mobile-break { display: none; }
+  .be-bike-actions { flex-direction: row; }
+  .be-bike-section { padding: 96px 7vw; }
+  .be-bike-gallery { grid-template-columns: 1.25fr .75fr; }
+  .be-bike-chip-grid { grid-template-columns: repeat(5, 1fr); }
+  .be-bike-price-section { display: flex; justify-content: space-between; align-items: center; gap: 36px; }
+  .be-bike-before-buying { margin: 28px 7vw; padding: 30px 34px; }
+  .be-bike-info-grid { grid-template-columns: repeat(2, 1fr); }
+  .be-bike-two-column { grid-template-columns: repeat(2, 1fr); }
+  .be-bike-footer { padding: 28px 7vw; flex-direction: row; justify-content: space-between; }
+  .be-bike-purchase-page { padding-top: 80px; }
+  .be-bike-purchase-list section { grid-template-columns: 60px 1fr; padding: 24px; }
+  .be-bike-final-cta { padding-top: 72px; padding-bottom: 72px; }
+}

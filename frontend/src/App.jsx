@@ -5,6 +5,8 @@ import Dashboard from "./pages/Dashboard";
 import Vehicles from "./pages/Vehicles";
 import Customers from "./pages/Customers";
 import FactoryChecklist from "./pages/FactoryChecklist";
+import BeBikeLanding from "./pages/BeBikeLanding";
+import BeBikePurchase from "./pages/BeBikePurchase";
 import { useAuth } from "./context/AuthContext";
 
 function ProtectedRoute({ children }) {
@@ -17,6 +19,8 @@ function ProtectedRoute({ children }) {
 export default function App() {
   return (
     <Routes>
+      <Route path="/be-bike" element={<BeBikeLanding />} />
+      <Route path="/be-bike/purchase" element={<BeBikePurchase />} />
       <Route path="/login" element={<Login />} />
       <Route
         path="/"
