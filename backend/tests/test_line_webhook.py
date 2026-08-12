@@ -10,6 +10,8 @@ from app.services.line_sales import (
     SALES_INSTRUCTIONS,
     generate_sales_reply,
     get_structured_sales_reply,
+    qualify_sales_message,
+    apply_qualification,
 )
 
 
@@ -44,7 +46,7 @@ def test_text_message_generates_reply_and_emits_lead(client, app, monkeypatch):
             calls["lead"] = inquiry
 
     app.extensions["line_lead_sink"] = Sink()
-    monkeypatch.setattr("app.routes.line_webhook.generate_sales_reply", lambda text, api_key, model: "您好，想先了解您的需求數量？")
+    monkeypatch.setattr("app.routes.line_webhook.generate_sales_reply", lambda *args: "您好，想先了解您的需求數量？")
     monkeypatch.setattr("app.routes.line_webhook.reply_to_line", lambda token, text, access_token: calls.update(reply=(token, text, access_token)))
     payload = {"events": [{
         "type": "message", "webhookEventId": "event-1", "replyToken": "reply-token", "timestamp": 123,
@@ -121,8 +123,12 @@ def test_six_rich_menu_intents_have_useful_fixed_replies():
     }
     assert set(MENU_REPLIES) == set(expected_content)
     for intent, expected in MENU_REPLIES.items():
-        assert generate_sales_reply(intent, "", "") == expected
-        assert "BE100" not in expected
+        reply = generate_sales_reply(intent, "", "")
+        if qualify_sales_message(intent).high_intent:
+            assert "了解，我幫您轉真人客服優先確認庫存與交易細節。" in reply
+        else:
+            assert reply == expected
+        assert "BE100" not in reply
         for phrase in expected_content[intent]:
             assert phrase in expected
 
@@ -130,7 +136,11 @@ def test_six_rich_menu_intents_have_useful_fixed_replies():
 def test_rich_menu_triggers_ignore_product_name_case():
     for trigger, expected in MENU_REPLIES.items():
         mixed_case_trigger = trigger.replace("BE-BIKE", "Be-Bike")
-        assert generate_sales_reply(mixed_case_trigger, "", "") == expected
+        reply = generate_sales_reply(mixed_case_trigger, "", "")
+        if qualify_sales_message(mixed_case_trigger).high_intent:
+            assert "真人客服優先確認" in reply
+        else:
+            assert reply == expected
 
 
 def test_price_questions_always_include_official_price():
@@ -289,3 +299,94 @@ def test_ai_safeguard_allows_verified_range_and_speed(monkeypatch):
     verified = "單次充電續航約 25 公里，最高輔助時速約 25 km/h。"
     monkeypatch.setattr("app.services.line_sales._post_json", lambda *args, **kwargs: {"output_text": verified})
     assert generate_sales_reply("請整理已確認規格", "test-key", "gpt-5-mini") == verified
+
+def test_sales_qualification_marks_required_high_intent_cases():
+    cases = {
+        "我要10台": "multi_unit",
+        "可以團購嗎": "group_purchase",
+        "怎麼付款": "payment",
+    }
+    for message, reason in cases.items():
+        qualification = qualify_sales_message(message)
+        assert qualification.high_intent is True
+        assert qualification.intent_reason == reason
+
+
+def test_casual_information_request_is_not_high_intent():
+    assert qualify_sales_message("我只是想了解一下").high_intent is False
+
+
+def test_high_intent_reply_never_exposes_payment_account():
+    reply = generate_sales_reply("怎麼付款", "", "")
+    assert "了解，我幫您轉真人客服優先確認庫存與交易細節。" in reply
+    assert "付款帳號" not in reply
+    assert not any(character.isdigit() for character in reply)
+
+
+def test_high_intent_qualification_collects_fields_one_at_a_time():
+    first = qualify_sales_message("我要10台")
+    assert "name" in first.missing_fields
+    assert "location" in first.missing_fields
+    assert "contact_time" in first.missing_fields
+    first_reply = generate_sales_reply("我要10台", "", "", first)
+    assert "怎麼稱呼" in first_reply
+    assert "所在的縣市" not in first_reply
+
+    second = qualify_sales_message("我是小林", {"quantity": 10, "intent_reason": "multi_unit"})
+    second_reply = generate_sales_reply("我是小林", "test-key", "test-model", second)
+    assert "所在的縣市" in second_reply
+    assert "預計需要幾台" not in second_reply
+
+
+def test_default_lead_sink_persists_high_intent_in_existing_customer_schema(app):
+    from app.extensions import db
+    from app.models.customer import Customer
+    from app.services.line_sales import LeadInquiry, LeadSink
+
+    with app.app_context():
+        LeadSink().record(LeadInquiry(
+            webhook_event_id="evt", message_id="msg", line_user_id="U-high", message="我要10台",
+            ai_reply="handoff", event_timestamp=1, high_intent=True, intent_reason="multi_unit",
+            quantity=10, location="台中市", purchase_purpose="公司採購", contact_time="下午",
+        ))
+        customer = Customer.query.filter_by(contact="LINE:U-high").one()
+        assert customer.is_batch_deal is True
+        assert customer.batch_note == "multi_unit"
+        assert customer.interested_quantity == 10
+        assert customer.next_action == "真人優先跟進"
+        assert "縣市：台中市" in customer.notes
+        assert "用途：公司採購" in customer.notes
+        db.session.rollback()
+
+
+def test_dashboard_reports_line_qualification_metrics(app, authenticated_client):
+    from datetime import date
+    from app.extensions import db
+    from app.models.customer import Customer
+
+    with app.app_context():
+        db.session.add_all([
+            Customer(name="高意向待跟進", contact="LINE:1", channel="B2C", source="LINE", status="新詢問", is_batch_deal=True),
+            Customer(name="高意向成交", contact="LINE:2", channel="B2C", source="LINE", status="已下訂", is_batch_deal=True, deal_date=date.today()),
+            Customer(name="一般詢問", contact="LINE:3", channel="B2C", source="LINE", status="新詢問"),
+        ])
+        db.session.commit()
+    metrics = authenticated_client.get("/api/dashboard/summary").get_json()["sales_qualification"]
+    assert metrics == {
+        "today_valid_inquiries": 3,
+        "today_high_intent": 2,
+        "total_high_intent": 2,
+        "pending_human_follow_up": 1,
+        "closed_deals": 1,
+    }
+
+def test_general_intent_uses_natural_progressive_qualification():
+    first = qualify_sales_message("我只是想了解一下")
+    assert first.high_intent is False
+    assert "所在縣市與預計數量" in apply_qualification("先回答產品問題。", first)
+
+    second = qualify_sales_message("我在台南市", {"location": "台南市"})
+    assert "預計需要幾台" in apply_qualification("了解。", second)
+
+    third = qualify_sales_message("1台", {"location": "台南市"})
+    assert "自用、團購、公司採購" in apply_qualification("了解。", third)
