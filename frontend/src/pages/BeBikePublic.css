@@ -33,6 +33,17 @@
 .be-bike-chip-grid span { background: #fff; border-radius: 14px; padding: 18px 12px; text-align: center; font-weight: 800; box-shadow: 0 8px 24px rgba(22,79,84,.06); }
 .be-bike-price-section { background: var(--be-green); color: #fff; }
 .be-bike-price-section .be-bike-kicker, .be-bike-price-section p { color: #c5e2e0; }
+.be-bike-verified-specs { background: #f1f7f6; }
+.be-bike-spec-grid { display: grid; gap: 14px; }
+.be-bike-spec-grid article { padding: 22px 18px; border: 1px solid #d2e4e2; border-radius: 18px; background: #fff; }
+.be-bike-spec-grid h3 { margin: 0 0 16px; font-size: 22px; }
+.be-bike-spec-grid dl { margin: 0; }
+.be-bike-spec-grid dl div { display: grid; gap: 3px; padding: 11px 0; border-top: 1px solid #e2eceb; }
+.be-bike-spec-grid dl div:first-child { padding-top: 0; border-top: 0; }
+.be-bike-spec-grid dt { color: var(--be-muted); font-size: 13px; font-weight: 800; }
+.be-bike-spec-grid dd { margin: 0; font-weight: 800; }
+.be-bike-spec-grid ul { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; margin: 0; padding-left: 20px; line-height: 1.55; }
+.be-bike-verification-note { margin: 18px 0 0; color: var(--be-muted); font-size: 14px; line-height: 1.7; }
 .be-bike-before-buying { margin: 22px 20px; padding: 24px 20px; border: 1px solid #e4c77f; border-radius: 18px; background: #fff8e8; }
 .be-bike-before-buying h2 { margin: 7px 0 14px; font-size: 28px; }
 .be-bike-before-buying ul { margin: 0 0 18px; padding-left: 20px; color: #5d5138; line-height: 1.8; }
@@ -95,6 +106,7 @@
   .be-bike-price-section { display: flex; justify-content: space-between; align-items: center; gap: 36px; }
   .be-bike-before-buying { margin: 28px 7vw; padding: 30px 34px; }
   .be-bike-info-grid { grid-template-columns: repeat(2, 1fr); }
+  .be-bike-spec-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .be-bike-two-column { grid-template-columns: repeat(2, 1fr); }
   .be-bike-footer { padding: 28px 7vw; flex-direction: row; justify-content: space-between; }
   .be-bike-purchase-page { padding-top: 80px; }

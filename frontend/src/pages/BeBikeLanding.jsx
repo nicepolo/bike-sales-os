@@ -8,6 +8,7 @@ import usePageMeta from "../hooks/usePageMeta";
 import "./BeBikePublic.css";
 
 const audiences = ["通勤族", "學生", "外籍工作者", "長輩", "日常短程代步"];
+const { inventory, verifiedSpecs } = BE_BIKE;
 
 export default function BeBikeLanding() {
   usePageMeta({
@@ -23,7 +24,7 @@ export default function BeBikeLanding() {
           <img src={BE_BIKE.assets.hero} alt="Be-Bike 實車外觀" />
           <div className="be-bike-hero-overlay" />
           <div className="be-bike-hero-content">
-            <p className="be-bike-eyebrow">全新庫存・數量有限</p>
+            <p className="be-bike-eyebrow">{inventory.newUnits} 台全新品・限量出清</p>
             <h1><span>Be-Bike</span><span>全新庫存<br className="be-bike-mobile-break" />限量出清</span></h1>
             <p className="be-bike-price">{BE_BIKE.price} <small>／台</small></p>
             <ul className="be-bike-hero-points">
@@ -59,8 +60,29 @@ export default function BeBikeLanding() {
         </section>
 
         <section className="be-bike-section be-bike-price-section">
-          <div><p className="be-bike-kicker">LIMITED STOCK</p><h2>{BE_BIKE.price}／台</h2><p>全新庫存出清，數量有限。多台、企業採購與團購可另行詢價。</p></div>
+          <div><p className="be-bike-kicker">LIMITED STOCK</p><h2>{BE_BIKE.price}／台</h2><p>本批確認可售全新品 {inventory.newUnits} 台，售完為止。多台、企業採購與團購可另行詢價。</p></div>
           <LineCta message={LINE_MESSAGES.inventory}>詢問庫存與團購</LineCta>
+        </section>
+
+        <section className="be-bike-section be-bike-verified-specs" aria-labelledby="verified-specs-title">
+          <div className="be-bike-section-heading">
+            <p className="be-bike-kicker">FACTORY VERIFIED</p><h2 id="verified-specs-title">工廠實勘確認規格</h2>
+          </div>
+          <div className="be-bike-spec-grid">
+            <article><h3>電池</h3><dl>
+              <div><dt>製造商</dt><dd>{verifiedSpecs.batteryManufacturer}</dd></div>
+              <div><dt>電力規格</dt><dd>{verifiedSpecs.batteryVoltage} / {verifiedSpecs.batteryCapacity} / {verifiedSpecs.batteryEnergy}</dd></div>
+              <div><dt>型號</dt><dd>Model {verifiedSpecs.batteryModel}</dd></div>
+              <div><dt>產地</dt><dd>{verifiedSpecs.batteryOrigin}</dd></div>
+            </dl></article>
+            <article><h3>實車配備</h3><ul>
+              <li>{verifiedSpecs.tireBrand} 輪胎</li><li>{verifiedSpecs.brakeLeverBrand} 煞把</li>
+              <li>{verifiedSpecs.crankBrand} 曲柄</li><li>{verifiedSpecs.motorPosition}</li>
+              <li>後貨架式可鎖電池</li><li>電池本體電量顯示</li><li>前車籃</li><li>前後擋泥板</li>
+              <li>反光片</li><li>車鈴</li><li>腳架</li>
+            </ul></article>
+          </div>
+          <p className="be-bike-verification-note">以上為 2026/08/12 工廠實車拍攝與標示確認資料。</p>
         </section>
 
         <section className="be-bike-before-buying" aria-labelledby="before-buying-title">
