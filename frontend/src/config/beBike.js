@@ -18,6 +18,8 @@ export const BE_BIKE = Object.freeze({
     brakeLeverBrand: "TEKTRO",
     crankBrand: "Prowheel",
     motorPosition: "前輪輪轂馬達",
+    range: "約 25 公里",
+    maxAssistSpeed: "約 25 km/h",
   }),
   assets: Object.freeze({
     hero: "/be-bike/be-bike-hero.jpg",

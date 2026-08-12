@@ -75,6 +75,12 @@ export default function BeBikeLanding() {
               <div><dt>型號</dt><dd>Model {verifiedSpecs.batteryModel}</dd></div>
               <div><dt>產地</dt><dd>{verifiedSpecs.batteryOrigin}</dd></div>
             </dl></article>
+            <article><h3>騎乘規格</h3><dl>
+              <div><dt>單次充電續航</dt><dd>{verifiedSpecs.range}</dd></div>
+              <div><dt>最高輔助時速</dt><dd>{verifiedSpecs.maxAssistSpeed}</dd></div>
+            </dl>
+            <p className="be-bike-spec-caveat">單次充電續航約 25 公里，實際依載重、路況、胎壓、騎乘方式及電池狀態而異。</p>
+            <p className="be-bike-spec-caveat">最高輔助時速約 25 km/h。</p></article>
             <article><h3>實車配備</h3><ul>
               <li>{verifiedSpecs.tireBrand} 輪胎</li><li>{verifiedSpecs.brakeLeverBrand} 煞把</li>
               <li>{verifiedSpecs.crankBrand} 曲柄</li><li>{verifiedSpecs.motorPosition}</li>
