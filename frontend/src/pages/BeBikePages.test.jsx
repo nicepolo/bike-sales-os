@@ -18,6 +18,11 @@ describe("Be-Bike public pages", () => {
     expect(screen.getByRole("heading", { level: 1, name: /Be-Bike.*全新庫存\s*限量出清/s })).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "LINE 查庫存" }).length).toBeGreaterThan(0);
     expect(screen.getAllByText("NT$12,800", { exact: false }).length).toBeGreaterThan(0);
+    expect(screen.getByText("100 台全新品・限量出清")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "工廠實勘確認規格" })).toBeInTheDocument();
+    expect(screen.getByText("36V / 10.2Ah / 367Wh")).toBeInTheDocument();
+    expect(screen.getByText("Model HWT-1003-AW-S35")).toBeInTheDocument();
+    expect(screen.getByText("以上為 2026/08/12 工廠實車拍攝與標示確認資料。")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "購買前請先知道" })).toBeInTheDocument();
     expect(screen.getByText("原廠不提供一般新品商業保固", { selector: "strong" })).toBeInTheDocument();
     expect(screen.getByText("依法享有的消費者權利不受影響", { selector: "strong" })).toBeInTheDocument();

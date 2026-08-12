@@ -14,7 +14,7 @@ export default function FactoryChecklist() {
   const [visitDraft, setVisitDraft] = useState({ title: "", factory_name: "", visit_date: "", notes: "" });
   const [detailsSaving, setDetailsSaving] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [createDraft, setCreateDraft] = useState({ title: "BE100 工廠實地採集", factory_name: "", visit_date: "", notes: "" });
+  const [createDraft, setCreateDraft] = useState({ title: "Be-Bike 工廠實地採集", factory_name: "", visit_date: "", notes: "" });
   const [creating, setCreating] = useState(false);
   const [navigationCursorId, setNavigationCursorId] = useState(null);
   const [pendingScrollId, setPendingScrollId] = useState(null);
@@ -30,7 +30,7 @@ export default function FactoryChecklist() {
     setCreating(true);
     try {
       const res = await client.post("/factory-visits", createDraft);
-      setCreateDraft({ title: "BE100 工廠實地採集", factory_name: "", visit_date: "", notes: "" });
+      setCreateDraft({ title: "Be-Bike 工廠實地採集", factory_name: "", visit_date: "", notes: "" });
       setShowCreateForm(false);
       await loadVisits();
       await openVisit(res.data.id);
