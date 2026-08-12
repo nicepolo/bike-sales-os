@@ -22,6 +22,8 @@ describe("Be-Bike public pages", () => {
     expect(screen.getByRole("heading", { name: "工廠實勘確認規格" })).toBeInTheDocument();
     expect(screen.getByText("36V / 10.2Ah / 367Wh")).toBeInTheDocument();
     expect(screen.getByText("Model HWT-1003-AW-S35")).toBeInTheDocument();
+    expect(screen.getByText("單次充電續航約 25 公里，實際依載重、路況、胎壓、騎乘方式及電池狀態而異。")).toBeInTheDocument();
+    expect(screen.getByText("最高輔助時速約 25 km/h。")).toBeInTheDocument();
     expect(screen.getByText("以上為 2026/08/12 工廠實車拍攝與標示確認資料。")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "購買前請先知道" })).toBeInTheDocument();
     expect(screen.getByText("原廠不提供一般新品商業保固", { selector: "strong" })).toBeInTheDocument();

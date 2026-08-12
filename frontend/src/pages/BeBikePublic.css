@@ -43,6 +43,7 @@
 .be-bike-spec-grid dt { color: var(--be-muted); font-size: 13px; font-weight: 800; }
 .be-bike-spec-grid dd { margin: 0; font-weight: 800; }
 .be-bike-spec-grid ul { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; margin: 0; padding-left: 20px; line-height: 1.55; }
+.be-bike-spec-caveat { margin: 14px 0 0; color: var(--be-muted); font-size: 14px; line-height: 1.7; }
 .be-bike-verification-note { margin: 18px 0 0; color: var(--be-muted); font-size: 14px; line-height: 1.7; }
 .be-bike-before-buying { margin: 22px 20px; padding: 24px 20px; border: 1px solid #e4c77f; border-radius: 18px; background: #fff8e8; }
 .be-bike-before-buying h2 { margin: 7px 0 14px; font-size: 28px; }

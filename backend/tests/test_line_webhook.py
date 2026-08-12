@@ -163,7 +163,6 @@ def test_group_and_multi_unit_requests_go_to_human_sales():
 
 def test_unverified_details_are_not_guessed():
     cases = {
-        "能跑幾公里？": "續航距離",
         "馬達幾瓦？": "馬達功率",
         "保固多久？": "保固",
         "台中配送費多少錢？": "配送方式與費用",
@@ -219,12 +218,12 @@ def test_ai_output_normalizes_product_name_when_attached_to_chinese_text(monkeyp
 def test_ai_output_rejects_wrong_price_and_unverified_numeric_claims(monkeypatch):
     responses = iter((
         {"output_text": "售價 NT$15,800。"},
-        {"output_text": "續航約 50 公里。"},
+        {"output_text": "馬達功率 500W。"},
     ))
     monkeypatch.setattr("app.services.line_sales._post_json", lambda *args, **kwargs: next(responses))
 
     assert generate_sales_reply("請整理促銷文案", "test-key", "gpt-5-mini") == SAFE_SALES_REPLY
-    assert generate_sales_reply("請換個說法", "test-key", "gpt-5-mini") != "續航約 50 公里。"
+    assert generate_sales_reply("請換個說法", "test-key", "gpt-5-mini") != "馬達功率 500W。"
 
 
 def test_sensitive_operational_details_use_human_confirmation():
@@ -272,3 +271,21 @@ def test_ai_safeguard_allows_verified_battery_numbers(monkeypatch):
     verified = "電池型號 HWT-1003-AW-S35，36V / 10.2Ah / 367Wh，台灣製。"
     monkeypatch.setattr("app.services.line_sales._post_json", lambda *args, **kwargs: {"output_text": verified})
     assert generate_sales_reply("請換個說法", "test-key", "gpt-5-mini") == verified
+
+def test_verified_range_questions_return_25_km_with_caveat():
+    for question in ("續航多少？", "可以騎多遠？"):
+        reply = get_structured_sales_reply(question)
+        assert "約 25 公里" in reply
+        for factor in ("載重", "路況", "騎乘方式", "電池狀態"):
+            assert factor in reply
+
+
+def test_verified_max_assist_speed_questions_return_25_kmh():
+    for question in ("最高時速？", "最快多少？"):
+        assert "最高輔助時速約 25 km/h" in get_structured_sales_reply(question)
+
+
+def test_ai_safeguard_allows_verified_range_and_speed(monkeypatch):
+    verified = "單次充電續航約 25 公里，最高輔助時速約 25 km/h。"
+    monkeypatch.setattr("app.services.line_sales._post_json", lambda *args, **kwargs: {"output_text": verified})
+    assert generate_sales_reply("請整理已確認規格", "test-key", "gpt-5-mini") == verified
