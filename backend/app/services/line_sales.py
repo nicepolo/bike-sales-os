@@ -4,12 +4,80 @@ import hmac
 import json
 import logging
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 
 logger = logging.getLogger(__name__)
+
+HIGH_INTENT_HANDOFF = "了解，我幫您轉真人客服優先確認庫存與交易細節。"
+GENERAL_QUALIFICATION_CTA = "如果方便的話，告訴我所在縣市與預計數量，我可以先幫您確認適合的購買方式。"
+
+HIGH_INTENT_PATTERNS = (
+    ("group_purchase", ("團購", "公司採購", "企業採購", "大量採購")),
+    ("payment", ("怎麼付款", "如何付款", "付款方式", "匯款方式")),
+    ("viewing", ("看車", "試騎", "預約")),
+    ("delivery", ("配送", "運費", "可以送")),
+    ("live_inventory", ("現貨", "即時庫存", "還剩", "剩幾台", "有貨")),
+    ("purchase", ("我要買", "想買", "下單", "我要訂")),
+)
+
+
+@dataclass(frozen=True)
+class SalesQualification:
+    high_intent: bool
+    intent_reason: str | None = None
+    quantity: int | None = None
+    location: str | None = None
+    purchase_purpose: str | None = None
+    contact_time: str | None = None
+    name: str | None = None
+    missing_fields: tuple[str, ...] = field(default_factory=tuple)
+
+
+def qualify_sales_message(message: str, known: dict | None = None) -> SalesQualification:
+    compact = re.sub(r"\s+", "", message)
+    quantity_match = re.search(r"(\d+)台", compact)
+    quantity = int(quantity_match.group(1)) if quantity_match else (known or {}).get("quantity")
+    reason = "multi_unit" if quantity and quantity >= 2 else (known or {}).get("intent_reason")
+    if not reason:
+        for candidate, keywords in HIGH_INTENT_PATTERNS:
+            if any(keyword in compact for keyword in keywords):
+                reason = candidate
+                break
+    purpose = next((value for value in ("自用", "團購", "公司採購", "其他") if value in compact), (known or {}).get("purchase_purpose"))
+    location_match = re.search(r"(?:在|住|位於|地點是)?(台北市|新北市|桃園市|台中市|台南市|高雄市|基隆市|新竹市|嘉義市|新竹縣|苗栗縣|彰化縣|南投縣|雲林縣|嘉義縣|屏東縣|宜蘭縣|花蓮縣|台東縣|澎湖縣|金門縣|連江縣)", message)
+    location = location_match.group(1) if location_match else (known or {}).get("location")
+    contact_time = (known or {}).get("contact_time")
+    if any(keyword in compact for keyword in ("上午", "下午", "晚上", "白天", "隨時", "週末", "平日")):
+        contact_time = message.strip()
+    name = (known or {}).get("name")
+    name_match = re.search(r"(?:叫我|我是|稱呼我)([\u4e00-\u9fffA-Za-z]{1,20})", message)
+    if name_match:
+        name = name_match.group(1)
+    field_order = (("name", name), ("location", location), ("quantity", quantity), ("contact_time", contact_time), ("purchase_purpose", purpose)) if reason else (("location", location), ("quantity", quantity), ("purchase_purpose", purpose), ("contact_time", contact_time))
+    missing = tuple(key for key, value in field_order if not value)
+    return SalesQualification(bool(reason), reason, quantity, location, purpose, contact_time, name, missing)
+
+
+def qualification_prompt(qualification: SalesQualification) -> str:
+    prompts = {
+        "name": "方便先告訴我怎麼稱呼您嗎？",
+        "location": "請問您所在的縣市是？",
+        "quantity": "預計需要幾台呢？",
+        "purchase_purpose": "這次主要是自用、團購、公司採購，還是其他用途呢？",
+        "contact_time": "真人客服什麼時間聯絡您比較方便？",
+    }
+    return prompts.get(qualification.missing_fields[0], "資料已記下，真人客服會優先接續協助。") if qualification.missing_fields else "資料已記下，真人客服會優先接續協助。"
+
+
+def apply_qualification(reply: str, qualification: SalesQualification) -> str:
+    if qualification.high_intent:
+        return f"{HIGH_INTENT_HANDOFF}{qualification_prompt(qualification)}"
+    if qualification.location is None and qualification.quantity is None:
+        return f"{reply} {GENERAL_QUALIFICATION_CTA}"
+    return f"{reply} {qualification_prompt(qualification)}" if qualification.missing_fields else reply
 
 PRODUCT_FACTS = """正式品名：Be-Bike。
 Be-Bike 是電動輔助自行車，本批為全新庫存出清，單台售價 NT$12,800。
@@ -234,10 +302,14 @@ def _post_json(url: str, payload: dict, headers: dict, timeout: int = 15) -> dic
         raise IntegrationError("upstream returned an invalid JSON response") from exc
 
 
-def generate_sales_reply(message: str, api_key: str, model: str) -> str:
+def generate_sales_reply(message: str, api_key: str, model: str, qualification: SalesQualification | None = None) -> str:
+    qualification_provided = qualification is not None
+    qualification = qualification or qualify_sales_message(message)
     structured_reply = get_structured_sales_reply(message)
     if structured_reply:
-        return structured_reply
+        return apply_qualification(structured_reply, qualification) if qualification.high_intent or qualification_provided else structured_reply
+    if qualification.high_intent:
+        return apply_qualification("", qualification)
     if not api_key:
         raise IntegrationError("OPENAI_API_KEY is not configured")
     result = _post_json(
@@ -266,7 +338,8 @@ def generate_sales_reply(message: str, api_key: str, model: str) -> str:
     if result.get("status") == "incomplete" or result.get("incomplete_details"):
         logger.warning("AI response was incomplete; using safe fallback")
         return SAFE_SALES_REPLY
-    return _apply_ai_output_safeguards(text)[:5000]
+    safe_reply = _apply_ai_output_safeguards(text)
+    return (apply_qualification(safe_reply, qualification) if qualification.high_intent or qualification_provided else safe_reply)[:5000]
 
 
 def reply_to_line(reply_token: str, message: str, access_token: str) -> None:
@@ -287,15 +360,69 @@ class LeadInquiry:
     message: str
     ai_reply: str
     event_timestamp: int | None
+    high_intent: bool = False
+    intent_reason: str | None = None
+    quantity: int | None = None
+    location: str | None = None
+    purchase_purpose: str | None = None
+    contact_time: str | None = None
+    name: str | None = None
 
 
 class LeadSink:
-    """Replace this adapter when LINE enquiries are ready to be persisted in CRM."""
+    """Persist LINE qualification data through the existing Customer model."""
 
     def record(self, inquiry: LeadInquiry) -> None:
-        logger.info("LINE lead received; persistence adapter is not configured")
+        from app.extensions import db
+        from app.models.customer import Customer
+
+        if not inquiry.line_user_id:
+            logger.info("LINE lead has no user id; skipping CRM persistence")
+            return
+        contact = f"LINE:{inquiry.line_user_id}"
+        customer = Customer.query.filter_by(contact=contact, source="LINE").first()
+        if customer is None:
+            customer = Customer(name=inquiry.name or "LINE 客戶", contact=contact, channel="B2C", status="新詢問", source="LINE", source_platform="LINE")
+            db.session.add(customer)
+        if inquiry.name:
+            customer.name = inquiry.name
+        if inquiry.quantity:
+            customer.interested_quantity = inquiry.quantity
+        if inquiry.high_intent:
+            customer.is_batch_deal = True
+            customer.batch_note = inquiry.intent_reason
+            customer.next_action = "真人優先跟進"
+        details = [f"訊息：{inquiry.message}"]
+        for label, value in (("縣市", inquiry.location), ("用途", inquiry.purchase_purpose), ("聯絡時間", inquiry.contact_time)):
+            if value:
+                details.append(f"{label}：{value}")
+        entry = "｜".join(details)
+        customer.notes = f"{customer.notes}\n{entry}".strip() if customer.notes else entry
+        db.session.commit()
+
+
+def get_lead_context(line_user_id: str | None) -> dict:
+    if not line_user_id:
+        return {}
+    from app.models.customer import Customer
+
+    customer = Customer.query.filter_by(contact=f"LINE:{line_user_id}", source="LINE").first()
+    if customer is None:
+        return {}
+    notes = customer.notes or ""
+
+    def last_value(label):
+        matches = re.findall(rf"{label}：([^｜\n]+)", notes)
+        return matches[-1] if matches else None
+    return {
+        "name": None if customer.name == "LINE 客戶" else customer.name,
+        "quantity": customer.interested_quantity,
+        "location": last_value("縣市"),
+        "purchase_purpose": last_value("用途"),
+        "contact_time": last_value("聯絡時間"),
+        "intent_reason": customer.batch_note if customer.is_batch_deal else None,
+    }
 
 
 def get_lead_sink(app):
-    # Tests or a future CRM adapter can set app.extensions["line_lead_sink"].
     return app.extensions.get("line_lead_sink") or LeadSink()
