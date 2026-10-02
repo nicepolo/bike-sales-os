@@ -112,9 +112,9 @@ def test_incomplete_ai_response_uses_safe_fallback(monkeypatch):
 
 def test_six_rich_menu_intents_have_useful_fixed_replies():
     expected_content = {
-        "我想了解 BE-BIKE 的特色與適合對象": ("電動輔助自行車", "小黃標", "NT$16,800", "預約看車"),
+        "我想了解 BE-BIKE 的特色與適合對象": ("電動輔助自行車", "小黃標", "NT$12,800", "預約看車"),
         "我想預約 BE-BIKE 購車諮詢": ("姓名或稱呼", "所在縣市", "預計數量", "方便聯絡時間"),
-        "我想詢問 BE-BIKE 目前的價格與庫存": ("NT$16,800", "原始可售全新品共 100 台", "即時剩餘數量", "真人客服確認"),
+        "我想詢問 BE-BIKE 目前的價格與庫存": ("NT$12,800", "原始可售全新品共 100 台", "即時剩餘數量", "真人客服確認"),
         "我想了解 BE-BIKE 的購買與交車流程": ("詢問庫存", "確認車輛與價格", "付款", "完成交車"),
         "我想查看 BE-BIKE 常見問題": ("全新庫存出清", "免駕照", "合法上路", "真人客服"),
         "我需要真人客服協助": ("姓名或稱呼", "所在縣市", "問題內容", "方便聯絡時間"),
@@ -135,7 +135,7 @@ def test_rich_menu_triggers_ignore_product_name_case():
 
 def test_price_questions_always_include_official_price():
     for message in ("價格與庫存", "多少錢？", "一台多少錢"):
-        assert "NT$16,800" in get_structured_sales_reply(message)
+        assert "NT$12,800" in get_structured_sales_reply(message)
 
 
 def test_overview_answers_verified_label_and_road_information():
@@ -194,12 +194,12 @@ def test_delivery_quote_is_treated_as_high_intent():
 def test_ai_output_normalizes_unofficial_product_names(monkeypatch):
     monkeypatch.setattr(
         "app.services.line_sales._post_json",
-        lambda *args, **kwargs: {"output_text": "BE100 每台 NT$16,800。"},
+        lambda *args, **kwargs: {"output_text": "BE100 每台 NT$12,800。"},
     )
 
     reply = generate_sales_reply("請摘要已知資料", "test-key", "gpt-5-mini")
 
-    assert reply == "Be-Bike 每台 NT$16,800。"
+    assert reply == "Be-Bike 每台 NT$12,800。"
     assert "BE100" not in reply
 
 
