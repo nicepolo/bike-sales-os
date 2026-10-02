@@ -12,7 +12,7 @@ from urllib.request import Request, urlopen
 logger = logging.getLogger(__name__)
 
 PRODUCT_FACTS = """正式品名：Be-Bike。
-Be-Bike 是電動輔助自行車，本批為全新庫存出清，單台售價 NT$16,800。
+Be-Bike 是電動輔助自行車，本批為全新庫存出清，單台售價 NT$12,800。
 本批確認可售全新品共 100 台，售完為止；即時剩餘庫存由真人客服確認。
 目前銷售專案不包含退役二手車。
 實車電池為 Han-Win Technology Co., Ltd.，型號 HWT-1003-AW-S35，36V / 10.2Ah / 367Wh，Made in Taiwan。
@@ -38,7 +38,7 @@ SALES_INSTRUCTIONS = f"""你是 Be-Bike 的 LINE 銷售助手，使用繁體中�
 正式品名一律寫作 Be-Bike。回覆控制在 250 個中文字以內，並以完整句子結束。"""
 
 OVERVIEW_REPLY = (
-    "Be-Bike 是電動輔助自行車，本批為全新庫存出清，每台 NT$16,800。車輛有小黃標及合格證號，"
+    "Be-Bike 是電動輔助自行車，本批為全新庫存出清，每台 NT$12,800。車輛有小黃標及合格證號，"
     "免駕照並可依相關規定合法上路，也曾與台南市政府合作。適合學生、通勤族、外籍工作者、長輩及日常代步族。"
     "想查庫存、預約看車、詢問團購，還是直接購買呢？"
 )
@@ -46,14 +46,14 @@ CONSULTATION_REPLY = (
     "可以，請留下：①姓名或稱呼 ②所在縣市 ③預計數量 ④想看車、試騎、購買或團購 ⑤方便聯絡時間，真人客服會接續協助您。"
 )
 PRICE_REPLY = (
-    "本批原始可售全新品共 100 台，每台 NT$16,800，售完為止；即時剩餘數量請由真人客服確認。多台或團購可另外報價。"
+    "本批原始可售全新品共 100 台，每台 NT$12,800，售完為止；即時剩餘數量請由真人客服確認。多台或團購可另外報價。"
 )
 PURCHASE_PROCESS_REPLY = (
     "購買流程：詢問庫存 → 確認車輛與價格 → 預約看車或確認購買 → 付款 → 安排自取或配送 → 完成交車。"
     "請提供所在縣市與數量，我們先為您確認。"
 )
 FAQ_REPLY = (
-    "常見資訊：Be-Bike 每台 NT$16,800、全新庫存出清、有小黃標及合格證號、免駕照，可依相關規定合法上路，"
+    "常見資訊：Be-Bike 每台 NT$12,800、全新庫存出清、有小黃標及合格證號、免駕照，可依相關規定合法上路，"
     "並曾與台南市政府合作。看車、配送、團購、保固及維修細節可由真人客服依需求確認。您最想了解哪一項？"
 )
 HUMAN_REPLY = (
@@ -64,7 +64,7 @@ HIGH_INTENT_REPLY = (
     "請提供姓名或稱呼、所在縣市、需要數量及方便聯絡時間。"
 )
 SAFE_SALES_REPLY = (
-    "您好！Be-Bike 是全新庫存出清的電動輔助自行車，每台 NT$16,800。"
+    "您好！Be-Bike 是全新庫存出清的電動輔助自行車，每台 NT$12,800。"
     "您想查庫存、預約看車、詢問團購，或請真人客服協助呢？"
 )
 
@@ -96,7 +96,7 @@ UNVERIFIED_REPLY = {
 }
 
 INVENTORY_REPLY = (
-    "本批原始可售全新品共 100 台，每台 NT$16,800，售完為止；"
+    "本批原始可售全新品共 100 台，每台 NT$12,800，售完為止；"
     "即時剩餘數量請由真人客服確認。"
 )
 VIEWING_ADDRESS_REPLY = (
@@ -124,7 +124,7 @@ def _apply_ai_output_safeguards(text: str) -> str:
     price_claim = re.search(r"(?:NT\$|NTD|新台幣|售價|價格|每台|一台)[^\d]{0,8}([\d,]+)", reply, flags=re.IGNORECASE)
     if not price_claim:
         price_claim = re.search(r"([\d,]{4,})\s*元", reply)
-    if price_claim and price_claim.group(1).replace(",", "") != "16800":
+    if price_claim and price_claim.group(1).replace(",", "") != "12800":
         logger.warning("AI response contained an incorrect price; using safe fallback")
         return SAFE_SALES_REPLY
 
@@ -179,9 +179,9 @@ def get_structured_sales_reply(message: str) -> str | None:
     if "二手" in compact:
         return "目前這一波 Be-Bike 銷售專案為 100 台全新品，退役二手車不包含在本批銷售中。"
     if any(keyword in compact for keyword in ("全新", "庫存車")):
-        return "本批 Be-Bike 原始可售全新品共 100 台，每台 NT$16,800，售完為止；即時剩餘數量請由真人客服確認。"
+        return "本批 Be-Bike 原始可售全新品共 100 台，每台 NT$12,800，售完為止；即時剩餘數量請由真人客服確認。"
     if "台南市政府" in compact or "政府合作" in compact:
-        return "Be-Bike 曾與台南市政府合作。本批為全新庫存出清，每台 NT$16,800。想查庫存或預約看車嗎？"
+        return "Be-Bike 曾與台南市政府合作。本批為全新庫存出清，每台 NT$12,800。想查庫存或預約看車嗎？"
     if any(keyword in compact for keyword in ("老人", "長輩", "學生", "通勤", "外籍", "適合誰", "代步")):
         return "Be-Bike 適合學生、通勤族、外籍工作者、長輩及日常代步族。實際是否適合仍建議看車或試騎確認；要幫您預約嗎？"
     if any(keyword in compact for keyword in ("哪裡可以看", "哪裡看車", "看車地址", "看車地點", "門市在哪", "地址在哪")):
