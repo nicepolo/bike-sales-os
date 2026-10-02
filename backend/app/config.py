@@ -2,9 +2,17 @@ import os
 
 
 def _normalize_db_url(url: str) -> str:
-    # Railway 提供的 DATABASE_URL 開頭是 postgres://，但 SQLAlchemy 2.x 要求 postgresql://
-    if url and url.startswith("postgres://"):
-        url = url.replace("postgres://", "postgresql://", 1)
+    if not url:
+        return url
+
+    # Railway may expose postgres:// or explicitly select the psycopg v3 driver.
+    # This project ships psycopg2-binary, so normalize both forms to psycopg2.
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+psycopg2://", 1)
+    if url.startswith("postgresql+psycopg://"):
+        return url.replace("postgresql+psycopg://", "postgresql+psycopg2://", 1)
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+psycopg2://", 1)
     return url
 
 
