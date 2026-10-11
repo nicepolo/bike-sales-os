@@ -114,7 +114,7 @@ def test_six_rich_menu_intents_have_useful_fixed_replies():
     expected_content = {
         "我想了解 BE-BIKE 的特色與適合對象": ("電動輔助自行車", "小黃標", "NT$12,800", "預約看車"),
         "我想預約 BE-BIKE 購車諮詢": ("姓名或稱呼", "所在縣市", "預計數量", "方便聯絡時間"),
-        "我想詢問 BE-BIKE 目前的價格與庫存": ("NT$12,800", "優先開放 20 台", "NT$24,000", "NT$10,800", "第一代電輔車 1 台"),
+        "我想詢問 BE-BIKE 目前的價格與庫存": ("NT$12,800", "20 台已全數售完", "剩餘 80 台庫存", "NT$24,000", "NT$10,800", "第一代電輔車 1 台"),
         "我想了解 BE-BIKE 的購買與交車流程": ("詢問庫存", "確認車輛與價格", "付款", "完成交車"),
         "我想查看 BE-BIKE 常見問題": ("全新庫存出清", "免駕照", "合法上路", "真人客服"),
         "我需要真人客服協助": ("姓名或稱呼", "所在縣市", "問題內容", "方便聯絡時間"),
@@ -230,7 +230,6 @@ def test_sensitive_operational_details_use_human_confirmation():
     cases = {
         "門市在哪？": "看車地址需由真人客服確認",
         "請給我匯款資訊": "付款帳號需由真人客服確認",
-        "還剩幾台？": "即時剩餘數量請由真人客服確認",
     }
     for question, expected in cases.items():
         assert expected in get_structured_sales_reply(question)
@@ -254,16 +253,18 @@ def test_verified_battery_questions_return_factory_specs():
             assert value in reply
 
 
-def test_inventory_reply_distinguishes_original_batch_from_live_stock():
+def test_inventory_reply_reports_verified_remaining_stock():
     reply = get_structured_sales_reply("現在還剩幾台？")
     assert "原始可售全新品共 100 台" in reply
-    assert "即時剩餘數量請由真人客服確認" in reply
+    assert "20 台已全數售完" in reply
+    assert "剩餘 80 台庫存" in reply
     assert "現在還有 100 台" not in reply
 
 
 def test_used_bike_question_excludes_retired_units_from_current_sale():
     reply = get_structured_sales_reply("是二手的嗎？")
-    assert "100 台全新品" in reply
+    assert "原始共 100 台全新品" in reply
+    assert "目前剩餘 80 台" in reply
     assert "退役二手車不包含在本批銷售中" in reply
 
 
@@ -295,7 +296,7 @@ def test_ai_safeguard_allows_verified_range_and_speed(monkeypatch):
 def test_promotion_is_returned_for_price_and_multi_unit_questions():
     for message in ("多少錢？", "2台多少錢", "3台優惠", "我要買2台", "有送一台嗎？"):
         reply = get_structured_sales_reply(message)
-        for phrase in ("優先開放 20 台", "1 台：NT$12,800", "2 台：NT$24,000", "3 台以上：NT$10,800／台", "第一代電輔車 1 台"):
+        for phrase in ("20 台已全數售完", "剩餘 80 台庫存", "1 台：NT$12,800", "2 台：NT$24,000", "3 台以上：NT$10,800／台", "第一代電輔車 1 台"):
             assert phrase in reply
 
 
@@ -304,3 +305,8 @@ def test_ai_pricing_cannot_mix_promotion_tiers(monkeypatch):
     assert _apply_ai_output_safeguards("1 台 NT$10,800") == PRICE_REPLY
     assert _apply_ai_output_safeguards("每台 NT$24,000") == PRICE_REPLY
     assert _apply_ai_output_safeguards("1 台 NT$12,800；2 台 NT$20,000") == SAFE_SALES_REPLY
+
+
+def test_ai_safeguard_allows_verified_inventory_count():
+    from app.services.line_sales import _apply_ai_output_safeguards
+    assert _apply_ai_output_safeguards("目前剩餘 80 台庫存，售完為止。") == "目前剩餘 80 台庫存，售完為止。"
