@@ -1,0 +1,50 @@
+name: Build lesson video clips
+on:
+  push:
+    branches: [mid-drive-install-site]
+    paths: [".github/workflows/mid-drive-build-videos.yml"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build-clips:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: mid-drive-install-site
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Prepare tools
+        run: |
+          python -m pip install --quiet gdown
+          ffmpeg -version | head -n 1
+      - name: Download user-provided original footage
+        run: |
+          gdown --fuzzy "https://drive.google.com/file/d/19vMIpSTa8HvO06S0OK6T5YEDtSkaxuKp/view" -O original.mov
+          test $(stat -c%s original.mov) -gt 450000000
+          ffprobe -v error -show_entries format=duration -of csv=p=0 original.mov
+      - name: Segment and optimize twelve chapters
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mid-drive-site/assets/video
+          starts=("00:00:00" "00:00:50" "00:02:20" "00:03:10" "00:05:25" "00:06:35" "00:12:50" "00:15:25" "00:18:45" "00:20:40" "00:24:45" "00:27:50")
+          seconds=(50 90 50 135 70 375 155 200 115 245 185 86)
+          for i in "${!starts[@]}"; do
+            n=$(printf "%02d" $((i+1)))
+            ffmpeg -nostdin -hide_banner -loglevel error -y -ss "${starts[$i]}" -i original.mov -t "${seconds[$i]}" -vf "scale=960:-2" -c:v libx264 -preset veryfast -crf 31 -pix_fmt yuv420p -c:a aac -b:a 48k -movflags +faststart "mid-drive-site/assets/video/chapter-${n}.mp4"
+            test -s "mid-drive-site/assets/video/chapter-${n}.mp4"
+            ls -lh "mid-drive-site/assets/video/chapter-${n}.mp4"
+          done
+      - name: Commit clips to dedicated deployment branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add mid-drive-site/assets/video
+          git diff --cached --quiet && exit 0
+          git commit -m "Add 12 optimized mid-drive installation chapter videos"
+          git push origin HEAD:mid-drive-install-site
