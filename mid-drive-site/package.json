@@ -1,0 +1,12 @@
+{
+  "name": "mid-drive-install-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Public interactive mid-drive motor installation guide",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
