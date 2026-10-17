@@ -10,3 +10,7 @@ video::cue { color: #fff; background: rgba(9,34,37,.85); font-family: system-ui,
 .hint-copy{font-size:16px;font-weight:650;line-height:1.6;margin:10px 0;color:#163e3c}
 .hint-step{font-size:12px;color:#397365}
 @media(max-width:600px){.synchronized-hint{margin:0 9px 12px;padding:13px}.hint-copy{font-size:15px}}
+
+.speech-caution{font-size:12px;line-height:1.5;color:#755c2c;background:#fff7e8;border-left:3px solid #d39c38;padding:9px 11px;margin:8px 14px 12px}
+video::cue{color:white;background:rgba(6,19,21,.85);font-size:95%}
+@media(max-width:600px){.speech-caution{margin:7px 9px 12px;font-size:11px}}
