@@ -1,0 +1,42 @@
+name: Generate voice transcript captions
+on:
+  push:
+    branches: [mid-drive-install-site]
+    paths: [".github/workflows/mid-drive-transcript.yml"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  transcript:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: mid-drive-install-site
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install CPU transcription dependencies
+        run: |
+          python -m pip install --quiet "faster-whisper>=1.1,<2" gdown opencc-python-reimplemented
+          ffmpeg -version | head -n 1
+      - name: Retrieve original user-authorized video
+        run: |
+          gdown "19vMIpSTa8HvO06S0OK6T5YEDtSkaxuKp" -O original.mov
+          test "$(stat -c%s original.mov)" -gt 450000000
+          ffmpeg -nostdin -hide_banner -loglevel error -y -i original.mov -vn -ac 1 -ar 16000 audio-16k.wav
+          test -s audio-16k.wav
+      - name: Generate Traditional Chinese speech VTT tracks
+        run: |
+          python -u mid-drive-site/scripts/transcribe_audio.py | tee /tmp/asr-summary.log
+      - name: Publish candidate voice subtitle tracks
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add mid-drive-site/assets/captions/*-speech.vtt mid-drive-site/assets/captions/transcription-metadata.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Add AI candidate speech subtitles for 12 installation chapters"
+          git pull --rebase origin mid-drive-install-site
+          git push origin HEAD:mid-drive-install-site
