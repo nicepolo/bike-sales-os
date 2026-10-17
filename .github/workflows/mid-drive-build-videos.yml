@@ -24,7 +24,7 @@ jobs:
           ffmpeg -version | head -n 1
       - name: Download user-provided original footage
         run: |
-          gdown --fuzzy "https://drive.google.com/file/d/19vMIpSTa8HvO06S0OK6T5YEDtSkaxuKp/view" -O original.mov
+          gdown "19vMIpSTa8HvO06S0OK6T5YEDtSkaxuKp" -O original.mov
           test $(stat -c%s original.mov) -gt 450000000
           ffprobe -v error -show_entries format=duration -of csv=p=0 original.mov
       - name: Segment and optimize twelve chapters
