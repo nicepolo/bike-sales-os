@@ -1,0 +1,22 @@
+{
+  "source": "IMG_8838.MOV",
+  "method": "faster-whisper small CPU int8",
+  "language": "zh",
+  "reviewed_by_human": false,
+  "segment_count": 276,
+  "per_chapter": [
+    8,
+    18,
+    16,
+    24,
+    14,
+    57,
+    27,
+    23,
+    27,
+    26,
+    24,
+    23
+  ],
+  "note": "AI word/phrase recognition and timestamps require checking."
+}
