@@ -14,3 +14,9 @@ video::cue { color: #fff; background: rgba(9,34,37,.85); font-family: system-ui,
 .speech-caution{font-size:12px;line-height:1.5;color:#755c2c;background:#fff7e8;border-left:3px solid #d39c38;padding:9px 11px;margin:8px 14px 12px}
 video::cue{color:white;background:rgba(6,19,21,.85);font-size:95%}
 @media(max-width:600px){.speech-caution{margin:7px 9px 12px;font-size:11px}}
+
+/* External LD3800 figure reference, never substituted for an approved torque sheet. */
+.manual-link{display:flex;flex-direction:column;gap:4px;margin:16px 0 20px;padding:13px 16px;border:1px solid #c5e4d3;border-left:5px solid #21896b;background:#edf8f1;border-radius:12px;color:#244c44}
+.manual-link strong{font-size:15px}
+.manual-link span{font-size:12px;color:#5e786f}
+.manual-link a{display:inline-flex;align-self:flex-start;font-size:13px;color:#096c56;font-weight:800;text-decoration:underline;text-underline-offset:3px;padding:4px 0}
