@@ -44,4 +44,42 @@ $("video[id^='video-']").forEach(v=>{
   draw();
 });
 
+
+/* Choose enhanced speech or original soundtrack without losing chapter progress. */
+$(".audio-choice").forEach(group=>{
+  const n=String(group.dataset.chapter||"").padStart(2,"0");
+  const video=document.getElementById("video-"+Number(n));
+  const source=video?.querySelector("source");
+  if(!video||!source)return;
+  let mode="clean";
+  const locations={
+    clean:"assets/video-clean/chapter-"+n+".mp4?v=14",
+    original:"assets/video/chapter-"+n+".mp4"
+  };
+  const controls=$(".audio-mode-button",group);
+  function activate(next){
+    if(!Object.prototype.hasOwnProperty.call(locations,next)||next===mode)return;
+    const time=Number(video.currentTime)||0;
+    const resume=!video.paused&&!video.ended;
+    mode=next;
+    controls.forEach(b=>{
+      const selected=b.dataset.audio===mode;
+      b.classList.toggle("active",selected);
+      b.setAttribute("aria-pressed",String(selected));
+    });
+    const restore=()=>{
+      if(time>0&&Number.isFinite(video.duration)&&video.duration>time){
+        try{video.currentTime=time}catch(e){}
+      }
+      try{for(const track of video.textTracks){if(track.kind==="subtitles")track.mode="showing"}}catch(e){}
+      if(resume)video.play().catch(()=>{});
+    };
+    video.addEventListener("loadedmetadata",restore,{once:true});
+    source.src=locations[mode];
+    video.load();
+  }
+  controls.forEach(b=>b.addEventListener("click",()=>activate(b.dataset.audio)));
+  video.addEventListener("error",()=>{if(mode==="clean"){activate("original");group.title="降噪音軌暫時無法播放，已切換原始音訊。";}});
+});
+
 page();update();document.documentElement.classList.add("app-ready")})();
