@@ -53,7 +53,7 @@ $(".audio-choice").forEach(group=>{
   if(!video||!source)return;
   let mode="clean";
   const locations={
-    clean:"assets/video-clean/chapter-"+n+".mp4?v=14",
+    clean:"assets/video-ai/chapter-"+n+".mp4?v=16",
     original:"assets/video/chapter-"+n+".mp4"
   };
   const controls=$(".audio-mode-button",group);
