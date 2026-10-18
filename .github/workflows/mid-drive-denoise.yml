@@ -1,0 +1,51 @@
+name: Improve mid-drive lesson audio
+on:
+  push:
+    branches: [mid-drive-install-site]
+    paths: [".github/workflows/mid-drive-denoise.yml"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  enhance-audio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: mid-drive-install-site
+          persist-credentials: true
+      - name: Install audio utilities
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+          ffmpeg -version | head -n 1
+      - name: Produce denoised alternative, preserving existing video
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mid-drive-site/assets/video-clean
+          for num in $(seq -w 1 12); do
+            src="mid-drive-site/assets/video/chapter-${num}.mp4"
+            dst="mid-drive-site/assets/video-clean/chapter-${num}.mp4"
+            test -s "$src"
+            ffmpeg -nostdin -hide_banner -loglevel error -y \
+              -i "$src" -map 0:v:0 -map 0:a:0 -c:v copy \
+              -af "highpass=f=115,lowpass=f=7500,afftdn=nr=13:nf=-32:nt=w:tn=1,acompressor=threshold=0.11:ratio=2.3:attack=12:release=150:makeup=1.4,loudnorm=I=-17:TP=-1.5:LRA=10" \
+              -c:a aac -b:a 80k -movflags +faststart "$dst"
+            test -s "$dst"
+            old_dur=$(ffprobe -v error -show_entries format=duration -of default=nk=1:nw=1 "$src")
+            new_dur=$(ffprobe -v error -show_entries format=duration -of default=nk=1:nw=1 "$dst")
+            python -c "import sys; a,b=map(float,sys.argv[1:]); assert abs(a-b)<.5, (a,b)" "$old_dur" "$new_dur"
+            echo "chapter-$num original $old_dur s; enhanced $new_dur s"
+          done
+          echo "All 12 alternative enhanced audio clips validated."
+      - name: Commit audio variants to deployment branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add mid-drive-site/assets/video-clean
+          git diff --cached --quiet && exit 0
+          git commit -m "Add 12 enhanced-speech alternatives for mid-drive lessons"
+          git pull --rebase origin mid-drive-install-site
+          git push origin HEAD:mid-drive-install-site
