@@ -23,7 +23,7 @@ $("video[id^='video-']").forEach(v=>{
     if(idx!==lastIndex){lastIndex=idx;text.textContent=idx===3?"安全提醒："+warning:taskTexts[idx]||title;foot.textContent="操作重點（參考進度） · 請核對下方清單";}
   };
   const no2=String(no).padStart(2,"0");
-  fetch("assets/captions/chapter-"+no2+".vtt").then(resp=>{
+  fetch("assets/captions/chapter-"+no2+".vtt?v=10").then(resp=>{
     if(!resp.ok)throw Error("guidance track unavailable");
     return resp.text();
   }).then(data=>{
