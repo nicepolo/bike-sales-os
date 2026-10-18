@@ -1,0 +1,72 @@
+name: AI speech enhancement LD3800
+on:
+  push:
+    branches: [mid-drive-install-site]
+    paths: [".github/workflows/mid-drive-ai-audio.yml"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  improve-speech:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: mid-drive-install-site
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install AI speech enhancement model and FFmpeg
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg libsndfile1
+          python -m pip install --upgrade pip
+          python -m pip install "deepfilternet>=0.5.6" 
+          command -v deepFilter
+          deepFilter --help | head -n 25
+      - name: Enhance speech from original twelve chapters with DeepFilterNet3
+        shell: bash
+        env:
+          OMP_NUM_THREADS: 4
+          MKL_NUM_THREADS: 4
+        run: |
+          set -euo pipefail
+          mkdir -p mid-drive-site/assets/video-ai /tmp/audio_in /tmp/audio_out
+          for i in $(seq -w 1 12); do
+            src="mid-drive-site/assets/video/chapter-$i.mp4"
+            wav="/tmp/audio_in/chapter-$i.wav"
+            dst="mid-drive-site/assets/video-ai/chapter-$i.mp4"
+            test -s "$src"
+            ffmpeg -hide_banner -nostdin -loglevel error -y -i "$src" -vn -ac 1 -ar 48000 -c:a pcm_s16le "$wav"
+            rm -f /tmp/audio_out/*.wav
+            deepFilter -m DeepFilterNet3 --pf --output-dir /tmp/audio_out "$wav"
+            enhanced=$(find /tmp/audio_out -maxdepth 1 -name '*.wav' -type f | head -n 1)
+            test -n "$enhanced" && test -s "$enhanced"
+            ffmpeg -hide_banner -nostdin -loglevel error -y -i "$src" -i "$enhanced" -map 0:v:0 -map 1:a:0 \
+               -c:v copy -af "highpass=f=85,lowpass=f=9000,alimiter=limit=0.91" -c:a aac -b:a 80k -movflags +faststart "$dst"
+            test -s "$dst"
+            python - "$src" "$dst" <<'PY'
+          import subprocess,sys
+          def getd(path):
+              return float(subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration','-of','default=nw=1:nk=1',path],text=True).strip())
+          a,b=map(getd,sys.argv[1:])
+          if abs(a-b)>0.5:
+              raise RuntimeError(f"Duration mismatch {a} vs {b}")
+          print(f"PASS: {sys.argv[2]} {b:.2f} seconds")
+          PY
+            rm -f "$wav" "$enhanced"
+          done
+          echo "AI processed all 12 videos; original and prior mild cleanup unchanged."
+      - name: Commit alternative AI speech tracks (not replacing any original)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add mid-drive-site/assets/video-ai
+          git diff --cached --quiet && exit 0
+          git commit -m "Add DeepFilterNet3 speech-enhanced LD3800 chapter clips"
+          git pull --rebase origin mid-drive-install-site
+          git push origin HEAD:mid-drive-install-site
