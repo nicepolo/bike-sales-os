@@ -62,8 +62,13 @@ PURCHASE_PROCESS_REPLY = (
     "請提供所在縣市與數量，我們先為您確認。"
 )
 FAQ_REPLY = (
-    "常見資訊：Be-Bike 每台 NT$12,800、全新庫存出清、有小黃標及合格證號、免駕照，可依相關規定合法上路，"
-    "並曾與台南市政府合作。看車、配送、團購、保固及維修細節可由真人客服依需求確認。您最想了解哪一項？"
+    "🚲 Be-Bike 常見問題\n"
+    "① 車況：本批為全新庫存出清，非二手車。\n"
+    "② 上路：有小黃標及合格證號，免駕照，依相關規定合法上路。\n"
+    "③ 續航與速度：單次充電約 25 公里，最高輔助時速約 25 km/h；實際依路況、載重及電池狀態而異。\n"
+    "④ 配送：方式與費用依地區、數量由真人客服確認。\n"
+    "⑤ 售後：保固與維修細節需由真人客服確認。\n"
+    "想了解價格、預約看車或配送方式，歡迎直接留言。"
 )
 HUMAN_REPLY = (
     "沒問題，我幫您轉真人客服。請留下：①姓名或稱呼 ②所在縣市 ③問題內容 ④需要數量 ⑤方便聯絡時間。"
@@ -172,6 +177,9 @@ def get_structured_sales_reply(message: str) -> str | None:
             return reply
 
     compact = re.sub(r"\s+", "", text)
+    # LINE rich-menu text can vary by menu configuration; route FAQ intent before AI/pricing.
+    if "常見問題" in compact or "FAQ" in compact.upper():
+        return FAQ_REPLY
     if any(keyword in compact for keyword in ("付款帳號", "匯款帳號", "轉帳帳號", "匯款資訊", "轉帳資訊")):
         return PAYMENT_ACCOUNT_REPLY
     if "配送報價" in compact:
