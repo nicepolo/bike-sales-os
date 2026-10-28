@@ -310,3 +310,21 @@ def test_ai_pricing_cannot_mix_promotion_tiers(monkeypatch):
 def test_ai_safeguard_allows_verified_inventory_count():
     from app.services.line_sales import _apply_ai_output_safeguards
     assert _apply_ai_output_safeguards("目前剩餘 80 台庫存，售完為止。") == "目前剩餘 80 台庫存，售完為止。"
+
+
+def test_faq_natural_language_menu_variants_use_faq_reply_not_price_reply():
+    expected = MENU_REPLIES["我想查看 BE-BIKE 常見問題"]
+    for message in (
+        "請告訴我 BE-BIKE 的常見問題",
+        "請告訴我 Be-Bike 的常見問題",
+        "Be-Bike 常見問題",
+        "請問常見問題有哪些？",
+        "Be-Bike FAQ",
+    ):
+        reply = get_structured_sales_reply(message)
+        assert reply == expected
+        assert "全新庫存出清" in reply
+        assert "續航與速度" in reply
+        assert "配送" in reply
+        assert "售後" in reply
+        assert "優惠價格" not in reply
