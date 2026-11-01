@@ -55,7 +55,7 @@ def test_text_message_generates_reply_and_emits_lead(client, app, monkeypatch):
     response = _signed_post(client, payload)
 
     assert response.status_code == 200
-    assert calls["reply"] == ("reply-token", "您好，想先了解您的需求數量？", "line-token")
+    assert calls["reply"] == ("reply-token", [{"type": "text", "text": "您好，想先了解您的需求數量？"}], "line-token")
     assert calls["lead"].line_user_id == "U123"
     assert calls["lead"].webhook_event_id == "event-1"
     assert calls["lead"].message_id == "m1"
@@ -328,3 +328,64 @@ def test_faq_natural_language_menu_variants_use_faq_reply_not_price_reply():
         assert "配送" in reply
         assert "售後" in reply
         assert "優惠價格" not in reply
+
+
+def test_rich_overview_uses_three_existing_real_product_photos():
+    from app.services.line_rich import build_sales_messages
+    from app.services.line_sales import OVERVIEW_REPLY
+
+    result = build_sales_messages("了解 Be-Bike", OVERVIEW_REPLY, "https://example.up.railway.app")
+    assert len(result) == 1
+    assert result[0]["type"] == "flex"
+    bubbles = result[0]["contents"]["contents"]
+    assert len(bubbles) == 3
+    images = [card["hero"]["url"] for card in bubbles]
+    assert images == [
+        "https://example.up.railway.app/be-bike/be-bike-hero.jpg",
+        "https://example.up.railway.app/be-bike/be-bike-detail.jpg",
+        "https://example.up.railway.app/be-bike/be-bike-side.jpg",
+    ]
+    assert bubbles[0]["footer"]["contents"][0]["action"]["type"] == "message"
+
+
+def test_visual_price_and_faq_preserve_offer_and_consumer_rights():
+    from app.services.line_rich import build_sales_messages
+    from app.services.line_sales import FAQ_REPLY, PRICE_REPLY
+
+    price = build_sales_messages("多少錢", PRICE_REPLY, "https://example.up.railway.app")
+    price_text = str(price)
+    for value in ("12,800", "24,000", "10,800", "80 台", "第一代電輔車"):
+        assert value in price_text
+
+    faq = build_sales_messages("常見問題", FAQ_REPLY, "https://example.up.railway.app")
+    faq_text = str(faq)
+    assert "原廠不提供一般新品商業保固" in faq_text
+    assert "依法享有的消費者權利不受影響" in faq_text
+    assert "真人客服" in faq_text
+
+
+def test_visual_messages_fall_back_to_text_when_origin_is_invalid():
+    from app.services.line_rich import build_sales_messages
+    from app.services.line_sales import PRICE_REPLY
+
+    for origin in (None, "", "http://localhost:5000", "https://localhost", "https://evil.test/path"):
+        assert build_sales_messages("多少錢", PRICE_REPLY, origin) == [{"type": "text", "text": PRICE_REPLY}]
+    assert build_sales_messages("其他問題", "請洽客服", "https://example.up.railway.app") == [
+        {"type": "text", "text": "請洽客服"}
+    ]
+
+
+def test_webhook_sends_flex_for_price_rich_menu(client, app, monkeypatch):
+    app.config.update(LINE_CHANNEL_SECRET="line-test-secret", LINE_CHANNEL_ACCESS_TOKEN="line-token")
+    sent = {}
+    monkeypatch.setattr("app.routes.line_webhook.reply_to_line", lambda token, messages, key: sent.update(messages=messages))
+    payload = {"events": [{
+        "type": "message", "replyToken": "token", "source": {"type": "user", "userId": "U123"},
+        "message": {"type": "text", "id": "m1", "text": "我想詢問 BE-BIKE 目前的價格與庫存"},
+    }]}
+    assert _signed_post(client, payload, secret="line-test-secret").status_code == 200
+    assert sent["messages"][0]["type"] == "text"  # localhost in tests: safe fallback
+
+    app.config["LINE_PUBLIC_BASE_URL"] = "https://example.up.railway.app"
+    assert _signed_post(client, payload, secret="line-test-secret").status_code == 200
+    assert sent["messages"][0]["type"] == "flex"
