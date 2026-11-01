@@ -28,6 +28,7 @@ class Config:
 
     LINE_CHANNEL_SECRET = os.environ.get("LINE_CHANNEL_SECRET", "")
     LINE_CHANNEL_ACCESS_TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN", "")
+    LINE_PUBLIC_BASE_URL = os.environ.get("LINE_PUBLIC_BASE_URL", "")
     OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
     OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5-mini")
 
