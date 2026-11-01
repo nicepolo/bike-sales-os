@@ -18,7 +18,9 @@ describe("Be-Bike public pages", () => {
     expect(screen.getByRole("heading", { level: 1, name: /Be-Bike.*全新庫存\s*限量出清/s })).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "LINE 查庫存" }).length).toBeGreaterThan(0);
     expect(screen.getAllByText("NT$12,800", { exact: false }).length).toBeGreaterThan(0);
-    expect(screen.getByText("100 台全新品・限量出清")).toBeInTheDocument();
+    expect(screen.getByText("首批 20 台售罄・現餘 80 台")).toBeInTheDocument();
+    expect(screen.getByText("NT$24,000")).toBeInTheDocument();
+    expect(screen.getByText("NT$10,800")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "工廠實勘確認規格" })).toBeInTheDocument();
     expect(screen.getByText("36V / 10.2Ah / 367Wh")).toBeInTheDocument();
     expect(screen.getByText("Model HWT-1003-AW-S35")).toBeInTheDocument();

@@ -114,3 +114,15 @@
   .be-bike-purchase-list section { grid-template-columns: 60px 1fr; padding: 24px; }
   .be-bike-final-cta { padding-top: 72px; padding-bottom: 72px; }
 }
+
+/* Compact, mobile-first promotion cards using verified current offers. */
+.be-bike-offer-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 20px 0 12px; }
+.be-bike-offer-grid article { display: flex; flex-direction: column; gap: 6px; min-width: 0; border: 1px solid rgba(255,255,255,.25); border-radius: 16px; padding: 16px 12px; background: rgba(255,255,255,.1); }
+.be-bike-offer-grid span { font-size: 12px; color: #d9efed; }
+.be-bike-offer-grid strong { font-size: clamp(16px, 3.2vw, 25px); color: #fff; white-space: nowrap; }
+.be-bike-offer-grid small { font-size: 12px; color: #cce8e6; }
+.be-bike-price-section .be-bike-promo-gift { font-weight: 800; color: #fff4c9; }
+@media (max-width: 480px) {
+  .be-bike-offer-grid { grid-template-columns: 1fr; }
+  .be-bike-offer-grid article { flex-direction: row; justify-content: space-between; align-items: center; }
+}

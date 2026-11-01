@@ -5,6 +5,8 @@ export const BE_BIKE = Object.freeze({
   inventory: Object.freeze({
     totalSellable: 100,
     newUnits: 100,
+    soldFirstWave: 20,
+    remainingUnits: 80,
     retiredUsedUnits: 0,
   }),
   verifiedSpecs: Object.freeze({
