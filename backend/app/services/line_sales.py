@@ -302,12 +302,16 @@ def generate_sales_reply(message: str, api_key: str, model: str) -> str:
     return _apply_ai_output_safeguards(text)[:5000]
 
 
-def reply_to_line(reply_token: str, message: str, access_token: str) -> None:
+def reply_to_line(reply_token: str, message: str | list[dict], access_token: str) -> None:
+    """Reply using text or a list of LINE message objects (e.g. Flex carousel)."""
     if not access_token:
         raise IntegrationError("LINE_CHANNEL_ACCESS_TOKEN is not configured")
+    messages = [{"type": "text", "text": message}] if isinstance(message, str) else message
+    if not messages or len(messages) > 5:
+        raise IntegrationError("LINE replies must contain 1 to 5 messages")
     _post_json(
         "https://api.line.me/v2/bot/message/reply",
-        {"replyToken": reply_token, "messages": [{"type": "text", "text": message}]},
+        {"replyToken": reply_token, "messages": messages},
         {"Authorization": f"Bearer {access_token}"},
     )
 
