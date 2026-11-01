@@ -24,7 +24,7 @@ export default function BeBikeLanding() {
           <img src={BE_BIKE.assets.hero} alt="Be-Bike 實車外觀" />
           <div className="be-bike-hero-overlay" />
           <div className="be-bike-hero-content">
-            <p className="be-bike-eyebrow">{inventory.newUnits} 台全新品・限量出清</p>
+            <p className="be-bike-eyebrow">首批 {inventory.soldFirstWave} 台售罄・現餘 {inventory.remainingUnits} 台</p>
             <h1><span>Be-Bike</span><span>全新庫存<br className="be-bike-mobile-break" />限量出清</span></h1>
             <p className="be-bike-price">{BE_BIKE.price} <small>／台</small></p>
             <ul className="be-bike-hero-points">
@@ -60,7 +60,13 @@ export default function BeBikeLanding() {
         </section>
 
         <section className="be-bike-section be-bike-price-section">
-          <div><p className="be-bike-kicker">LIMITED STOCK</p><h2>{BE_BIKE.price}／台</h2><p>本批確認可售全新品 {inventory.newUnits} 台，售完為止。多台、企業採購與團購可另行詢價。</p></div>
+          <div><p className="be-bike-kicker">LIMITED STOCK</p><h2>{BE_BIKE.price}／台</h2><p>本批原始 100 台全新品，首批 20 台已售完，目前剩餘 {inventory.remainingUnits} 台，售完為止。</p>
+            <div className="be-bike-offer-grid" aria-label="Be-Bike 現行優惠方案">
+              <article><span>單台優惠</span><strong>NT$12,800</strong><small>1 台</small></article>
+              <article><span>雙台組合</span><strong>NT$24,000</strong><small>2 台合計</small></article>
+              <article><span>多人團購</span><strong>NT$10,800</strong><small>3 台以上，每台</small></article>
+            </div>
+            <p className="be-bike-promo-gift">🎁 購買 3 台以上，加贈第一代電輔車 1 台。</p></div>
           <LineCta message={LINE_MESSAGES.inventory}>詢問庫存與團購</LineCta>
         </section>
 
