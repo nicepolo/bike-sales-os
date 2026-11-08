@@ -404,18 +404,17 @@ def test_webhook_sends_flex_for_price_rich_menu(client, app, monkeypatch):
     assert sent["messages"][1]["type"] == "text"
 
 
-def test_price_card_button_sends_allowlisted_postback():
+def test_overview_card_button_sends_allowlisted_postback():
     from app.services.line_rich import POSTBACK_INTENTS, build_sales_messages
-    from app.services.line_sales import PRICE_REPLY
+    from app.services.line_sales import OVERVIEW_REPLY
 
-    result = build_sales_messages("多少錢", PRICE_REPLY, "https://example.up.railway.app")
+    result = build_sales_messages("了解 Be-Bike", OVERVIEW_REPLY, "https://example.up.railway.app")
     card = result[0]["contents"]["contents"][0]
     for surface in (card["hero"], card["body"], card["footer"]["contents"][0]):
         action = surface["action"]
         assert action["type"] == "postback"
-        assert action["data"] == "be-bike:buy"
-        assert action["displayText"] == POSTBACK_INTENTS["be-bike:buy"]
-    assert "我要買" in POSTBACK_INTENTS["be-bike:buy"]
+        assert action["data"] == "be-bike:price"
+        assert action["displayText"] == POSTBACK_INTENTS["be-bike:price"]
 
 
 def test_line_postback_buy_tap_returns_a_real_reply(client, app, monkeypatch):
