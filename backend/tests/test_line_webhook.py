@@ -350,7 +350,11 @@ def test_rich_overview_uses_three_existing_real_product_photos():
         action = card["footer"]["contents"][0]["action"]
         assert card["hero"]["action"] == action
         assert card["body"]["action"] == action
-        assert action["displayText"]
+        if action["type"] == "postback":
+            assert action["displayText"]
+        else:
+            assert action["type"] == "uri"
+            assert action["uri"].startswith("https://")
 
 
 
