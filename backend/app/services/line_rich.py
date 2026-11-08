@@ -7,6 +7,7 @@ from urllib.parse import urlsplit
 
 from app.services.line_sales import (
     FAQ_REPLY,
+    CONSULTATION_REPLY,
     OVERVIEW_REPLY,
     PRICE_REPLY,
     PURCHASE_PROCESS_REPLY,
@@ -103,6 +104,20 @@ def build_sales_messages(customer_text: str, sales_reply: str, public_origin: st
 
     info_url = f"{origin}/be-bike"
     consultation = "我想預約 BE-BIKE 購車諮詢"
+    poster_by_reply = {
+        PRICE_REPLY: "be-bike-line-price.jpg",
+        FAQ_REPLY: "be-bike-line-faq.jpg",
+        CONSULTATION_REPLY: "be-bike-line-booking.jpg",
+        PURCHASE_PROCESS_REPLY: "be-bike-line-process.jpg",
+    }
+    poster = poster_by_reply.get(sales_reply)
+    if poster:
+        image_url = f"{origin}{PHOTO_ROOT}/{poster}"
+        return [
+            {"type": "image", "originalContentUrl": image_url, "previewImageUrl": image_url},
+            {"type": "text", "text": sales_reply + "\n\n📷 圖片為 AI 情境示意，實際車況以官網實車照片為準：" + info_url},
+        ]
+
     cards = None
 
     if sales_reply == OVERVIEW_REPLY:
