@@ -345,7 +345,17 @@ def test_rich_overview_uses_three_existing_real_product_photos():
         "https://example.up.railway.app/be-bike/be-bike-detail.jpg",
         "https://example.up.railway.app/be-bike/be-bike-side.jpg",
     ]
-    assert bubbles[0]["footer"]["contents"][0]["action"]["type"] == "message"
+    assert bubbles[0]["footer"]["contents"][0]["action"]["type"] == "postback"
+    for card in bubbles:
+        action = card["footer"]["contents"][0]["action"]
+        assert card["hero"]["action"] == action
+        assert card["body"]["action"] == action
+        if action["type"] == "postback":
+            assert action["displayText"]
+        else:
+            assert action["type"] == "uri"
+            assert action["uri"].startswith("https://")
+
 
 
 def test_visual_price_and_faq_preserve_offer_and_consumer_rights():
@@ -389,3 +399,65 @@ def test_webhook_sends_flex_for_price_rich_menu(client, app, monkeypatch):
     app.config["LINE_PUBLIC_BASE_URL"] = "https://example.up.railway.app"
     assert _signed_post(client, payload, secret="line-test-secret").status_code == 200
     assert sent["messages"][0]["type"] == "flex"
+
+
+def test_price_card_button_sends_allowlisted_postback():
+    from app.services.line_rich import POSTBACK_INTENTS, build_sales_messages
+    from app.services.line_sales import PRICE_REPLY
+
+    result = build_sales_messages("多少錢", PRICE_REPLY, "https://example.up.railway.app")
+    card = result[0]["contents"]["contents"][0]
+    for surface in (card["hero"], card["body"], card["footer"]["contents"][0]):
+        action = surface["action"]
+        assert action["type"] == "postback"
+        assert action["data"] == "be-bike:buy"
+        assert action["displayText"] == POSTBACK_INTENTS["be-bike:buy"]
+    assert "我要買" in POSTBACK_INTENTS["be-bike:buy"]
+
+
+def test_line_postback_buy_tap_returns_a_real_reply(client, app, monkeypatch):
+    from app.services.line_sales import HIGH_INTENT_REPLY
+
+    app.config.update(
+        LINE_CHANNEL_SECRET="line-test-secret",
+        LINE_CHANNEL_ACCESS_TOKEN="line-token",
+        LINE_PUBLIC_BASE_URL="https://example.up.railway.app",
+    )
+    calls = {}
+    monkeypatch.setattr(
+        "app.routes.line_webhook.reply_to_line",
+        lambda token, messages, key: calls.update(reply=(token, messages, key)),
+    )
+    payload = {"events": [{
+        "type": "postback", "webhookEventId": "tap-1", "replyToken": "tap-token",
+        "source": {"type": "user", "userId": "U123"},
+        "postback": {"data": "be-bike:buy"},
+    }]}
+    assert _signed_post(client, payload).status_code == 200
+    assert calls["reply"] == (
+        "tap-token", [{"type": "text", "text": HIGH_INTENT_REPLY}], "line-token"
+    )
+
+
+def test_unknown_line_postback_is_ignored(client, app, monkeypatch):
+    app.config["LINE_CHANNEL_SECRET"] = "line-test-secret"
+    monkeypatch.setattr(
+        "app.routes.line_webhook.reply_to_line",
+        lambda *args: (_ for _ in ()).throw(AssertionError("unknown action must be ignored")),
+    )
+    payload = {"events": [{
+        "type": "postback", "replyToken": "fake-token",
+        "postback": {"data": "be-bike:admin"},
+    }]}
+    assert _signed_post(client, payload).status_code == 200
+
+
+def test_photo_and_body_taps_on_website_card_open_real_page():
+    from app.services.line_rich import build_sales_messages
+    from app.services.line_sales import OVERVIEW_REPLY
+
+    result = build_sales_messages("了解 Be-Bike", OVERVIEW_REPLY, "https://example.up.railway.app")
+    card = result[0]["contents"]["contents"][2]
+    for surface in (card["hero"], card["body"], card["footer"]["contents"][0]):
+        assert surface["action"]["type"] == "uri"
+        assert surface["action"]["uri"] == "https://example.up.railway.app/be-bike"

@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from flask import Blueprint, current_app, jsonify, request
 
-from app.services.line_rich import build_sales_messages
+from app.services.line_rich import POSTBACK_INTENTS, build_sales_messages
 from app.services.line_sales import (
     IntegrationError,
     LeadInquiry,
@@ -19,12 +19,8 @@ bp = Blueprint("line_webhook", __name__, url_prefix="/api/webhooks/line")
 _executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="line-webhook")
 
 
-def _process_text_event(app, event: dict, public_origin: str) -> None:
+def _process_text_event(app, event: dict, public_origin: str, user_text: str) -> None:
     message = event.get("message") or {}
-    user_text = message.get("text", "").strip()
-    if not user_text:
-        return
-
     try:
         ai_reply = generate_sales_reply(
             user_text,
@@ -49,14 +45,14 @@ def _process_text_event(app, event: dict, public_origin: str) -> None:
         logger.exception("LINE webhook background processing failed")
 
 
-def _submit_text_event(app, event: dict, public_origin: str) -> None:
+def _submit_text_event(app, event: dict, public_origin: str, user_text: str) -> None:
     # LINE closes webhook requests quickly. Production work is dispatched to a
     # background worker so the callback can acknowledge immediately. Keep tests
     # synchronous so existing assertions remain deterministic.
     if app.testing:
-        _process_text_event(app, event, public_origin)
+        _process_text_event(app, event, public_origin, user_text)
         return
-    _executor.submit(_process_text_event, app, event, public_origin)
+    _executor.submit(_process_text_event, app, event, public_origin, user_text)
 
 
 @bp.post("")
@@ -74,11 +70,20 @@ def webhook():
     # An explicit origin is supported for custom domains and proxy setups.
     public_origin = app.config.get("LINE_PUBLIC_BASE_URL") or f"https://{request.host}"
     for event in payload["events"]:
-        message = event.get("message") or {}
-        if event.get("type") != "message" or message.get("type") != "text" or not event.get("replyToken"):
+        if not event.get("replyToken"):
             continue
-        if not message.get("text", "").strip():
+        if event.get("type") == "message":
+            message = event.get("message") or {}
+            if message.get("type") != "text":
+                continue
+            user_text = message.get("text", "").strip()
+        elif event.get("type") == "postback":
+            # Only our known Be-Bike actions are accepted. No arbitrary
+            # postback data is passed to the sales agent.
+            user_text = POSTBACK_INTENTS.get((event.get("postback") or {}).get("data"), "")
+        else:
             continue
-        _submit_text_event(app, event, public_origin)
+        if user_text:
+            _submit_text_event(app, event, public_origin, user_text)
 
     return jsonify({"ok": True})

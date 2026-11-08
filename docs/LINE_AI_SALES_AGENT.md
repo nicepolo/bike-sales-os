@@ -43,7 +43,7 @@ For the overview, price, FAQ and purchase-process replies, the LINE webhook send
 - `/be-bike/be-bike-detail.jpg`
 - `/be-bike/be-bike-side.jpg`
 
-The buttons either send a predefined sales/consultation message or open the real-photo/video landing page `/be-bike`. No AI-generated bicycle photographs are used. The images must be reachable as public HTTPS resources for LINE clients.
+All three card surfaces (photo, description, and CTA button) now perform the same action. Sales and consultation taps use allowlisted LINE postback events with visible `displayText`, and the webhook resolves those events to existing sales replies; photo/video links open the real landing page `/be-bike`. Previously delivered cards retain their old actions, so request a new card after deployment to test. No AI-generated bicycle photographs are used. The images must be reachable as public HTTPS resources for LINE clients.
 
 For one-off questions, uncertain media origins, and all human handoffs, the system keeps the normal text-only reply. The underlying approved response content and lead collection remain unchanged.
 
