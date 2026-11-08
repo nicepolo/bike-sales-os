@@ -85,3 +85,24 @@ This keeps channel handling separate from CRM policy and avoids creating incompl
 ## Safety behavior
 
 The agent directly answers with approved facts. It must not invent a certificate number, motor rated power, dimensions, weight, warranty period, delivery fee, viewing address, payment account, or unconfirmed inventory changes. Unverified details are handed to human sales for confirmation. AI output is normalized to the official product name and rejected if it contains an incorrect numeric price or an unverified numeric specification claim.
+
+## Illustrated mobile LINE replies (November 2026)
+
+Four product posters are served directly from the existing Be-Bike Railway host,
+not from expiring Canva or Google Drive thumbnail URLs:
+
+- `frontend/public/be-bike/be-bike-line-price.jpg` for prices and stock;
+- `frontend/public/be-bike/be-bike-line-faq.jpg` for common questions;
+- `frontend/public/be-bike/be-bike-line-booking.jpg` for viewing/consultation;
+- `frontend/public/be-bike/be-bike-line-process.jpg` for purchase steps.
+
+For each recognized intent the webhook sends one **native LINE image message**
+followed by one text message containing the approved sales reply and a link
+to actual product photos. The graphics are explicitly described as AI-generated
+illustrative artwork; they are not claimed to be actual photos of a sale unit.
+Product overview retains its real-photograph Flex carousel and postback buttons.
+The prior postback bug fix remains active; genuine purchase intent and other
+free-form inquiries continue to go to human sales text routing.
+
+Deploy from `master` on the existing Railway `bike-sales-os` service.
+Confirm both image URLs and LINE message delivery on a device after deployment.
